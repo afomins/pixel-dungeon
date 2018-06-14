@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
@@ -89,7 +90,11 @@ public class Item implements Bundlable {
 	public boolean cursedKnown;
 	
 	public boolean unique = false;
-	
+
+    // PD3D: unique ID of the item
+    private static int m_pd3d_cnt;
+    public int m_pd3d_id;
+
 	private static Comparator<Item> itemComparator = new Comparator<Item>() {	
 		@Override
 		public int compare( Item lhs, Item rhs ) {
@@ -545,7 +550,7 @@ public class Item implements Bundlable {
 		final int cell = Ballistica.cast( user.pos, dst, false, true );
 		user.sprite.zap( cell );
 		user.busy();
-		
+
 		Sample.INSTANCE.play( Assets.SND_MISS, 0.6f, 0.6f, 1.5f );
 		
 		Char enemy = Actor.findChar( cell );
@@ -566,7 +571,14 @@ public class Item implements Bundlable {
 			}
 		}
 		final float finalDelay = delay;
-		
+
+        // PD3D: set target cell
+        Pd3d.game.SetTargetCell(cell);
+
+        // PD3D: run onThrow() instantly
+        Item.this.detach( user.belongings.backpack ).onThrow( cell );
+        user.spendAndNext( finalDelay );
+/*
 		((MissileSprite)user.sprite.parent.recycle( MissileSprite.class )).
 			reset( user.pos, cell, this, new Callback() {			
 				@Override
@@ -575,6 +587,7 @@ public class Item implements Bundlable {
 					user.spendAndNext( finalDelay );
 				}
 			} );
+*/
 	}
 	
 	protected static Hero curUser = null;
@@ -591,4 +604,20 @@ public class Item implements Bundlable {
 			return "Choose direction of throw";
 		}
 	};
+
+    //
+    // PD3D
+    //
+
+    // Throw item instantly without doing cell selection 
+    public static void Pd3dThrow(Hero user, Item item, int cell_idx) {
+        curUser = user;
+        curItem = item;
+        thrower.onSelect(cell_idx);
+    }
+
+    // Each item has unique ID
+    public Item() {
+        m_pd3d_id = m_pd3d_cnt++;
+    }
 }

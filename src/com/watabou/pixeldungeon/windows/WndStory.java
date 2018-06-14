@@ -17,6 +17,7 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.noosa.Game;
@@ -42,7 +43,7 @@ public class WndStory extends Window {
 	public static final int ID_METROPOLIS	= 3;
 	public static final int ID_HALLS		= 4;
 	
-	private static final SparseArray<String> CHAPTERS = new SparseArray<String>();
+	public static final SparseArray<String> CHAPTERS = new SparseArray<String>();
 	
 	static {
 		CHAPTERS.put( ID_SEWERS, 
@@ -101,6 +102,9 @@ public class WndStory extends Window {
 		} );
 		
 		resize( (int)(tf.width() + MARGIN * 2), (int)Math.min( tf.height(), 180 ) );
+
+        // Pd3d
+        Pd3d.pd.GetInfoList().Add(text);
 	}
 	
 	@Override

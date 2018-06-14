@@ -17,6 +17,9 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.msg.MsgQuestStart;
+
 import com.watabou.pixeldungeon.actors.hero.HeroSubClass;
 import com.watabou.pixeldungeon.items.TomeOfMastery;
 import com.watabou.pixeldungeon.sprites.ItemSprite;
@@ -38,7 +41,8 @@ public class WndChooseWay extends Window {
 		final String TXT_MASTERY	= "Which way will you follow?";
 		final String TXT_CANCEL		= "I'll decide later";
 		
-		float bottom = createCommonStuff( tome, way1.desc() + "\n\n" + way2.desc() + "\n\n" + TXT_MASTERY );
+        String pd3d_text = way1.desc() + "\n\n" + way2.desc() + "\n\n" + TXT_MASTERY;
+		float bottom = createCommonStuff( tome, pd3d_text );
 		
 		RedButton btnWay1 = new RedButton( Utils.capitalize( way1.title() ) ) {
 			@Override
@@ -70,6 +74,16 @@ public class WndChooseWay extends Window {
 		add( btnCancel );
 		
 		resize( WIDTH, (int)btnCancel.bottom() );
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            msg.quest.text = pd3d_text;
+            Pd3d.game.ResetQuest(msg.quest)
+              .RegisterQuestAction(msg.quest, "way1", btnWay1)
+              .RegisterQuestAction(msg.quest, "way2", btnWay2)
+              .RegisterQuestAction(msg.quest, "cancel", btnCancel);
+        }
 	}
 	
 	public WndChooseWay( final TomeOfMastery tome, final HeroSubClass way ) {
@@ -81,7 +95,8 @@ public class WndChooseWay extends Window {
 		final String TXT_OK		= "Yes, I want to respec";
 		final String TXT_CANCEL	= "Maybe later";
 		
-		float bottom = createCommonStuff( tome, way.desc() + "\n\n" + Utils.format( TXT_REMASTERY, Utils.indefinite( way.title() ) ) );
+        String pd3d_text = way.desc() + "\n\n" + Utils.format( TXT_REMASTERY, Utils.indefinite( way.title() ) );
+		float bottom = createCommonStuff( tome, pd3d_text);
 		
 		RedButton btnWay = new RedButton( TXT_OK ) {
 			@Override
@@ -103,6 +118,15 @@ public class WndChooseWay extends Window {
 		add( btnCancel );
 		
 		resize( WIDTH, (int)btnCancel.bottom() );
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            msg.quest.text = pd3d_text;
+            Pd3d.game.ResetQuest(msg.quest)
+              .RegisterQuestAction(msg.quest, "ok", btnWay)
+              .RegisterQuestAction(msg.quest, "cancel", btnCancel);
+        }
 	}
 	
 	private float createCommonStuff( TomeOfMastery tome, String text ) {

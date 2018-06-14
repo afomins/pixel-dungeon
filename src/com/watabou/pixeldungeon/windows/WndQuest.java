@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.actors.mobs.npcs.NPC;
 import com.watabou.pixeldungeon.ui.HighlightedText;
@@ -46,7 +48,17 @@ public class WndQuest extends Window {
 		hl.text( text, width );
 		hl.setPos( titlebar.left(), titlebar.bottom() + GAP );
 		add( hl );
-		
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            msg.quest.text = text;
+            Pd3d.game.ResetQuest(msg.quest);
+//            if(options.length == 0) {
+//                msg.quest.actions = null;
+//            }
+        }
+
 		if (options.length > 0) {
 			float pos = hl.bottom();
 			
@@ -66,12 +78,22 @@ public class WndQuest extends Window {
 				add( btn );
 				
 				pos += BTN_HEIGHT;
+
+                // PD3D: Continue quest
+                if(msg != null) {
+                    Pd3d.game.RegisterQuestAction(
+                      msg.quest, "opt-#" + i, btn);
+                }
 			}
 			
 			resize( width, (int)pos );
 			
 		} else {
-		
+            // PD3D: Continue quest
+            if(msg != null) {
+                Pd3d.game.RegisterQuestAction(
+                  msg.quest, "Ok", true, this);
+            }
 			resize( width, (int)hl.bottom() );
 		}
 	}

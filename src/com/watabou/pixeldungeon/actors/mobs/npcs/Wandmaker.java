@@ -19,6 +19,11 @@ package com.watabou.pixeldungeon.actors.mobs.npcs;
 
 import java.util.ArrayList;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.Journal;
 import com.watabou.pixeldungeon.actors.Actor;
@@ -267,6 +272,22 @@ public class Wandmaker extends NPC {
 		protected String txtQuest2;
 		
 		public void interact( Wandmaker wandmaker ) {
+            // PD3D: Start quest
+            MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+            if(msg == null) {
+                msg = MsgQuestStart.CreateRequest();
+                msg.quest = new DescQuest();
+                msg.quest.need_response = true;
+                msg.quest.title = wandmaker.name;
+                msg.quest.name = "wandmaker";
+                msg.quest.target_char_id = wandmaker.id();
+                msg.quest.sprite_id = new DescSpriteInst();
+                msg.quest.sprite_id.type = "char";
+                msg.quest.sprite_id.id = MapEnum.CharType.WANDMAKER.ordinal();
+                Pd3d.pd.AddToRecvQueue(msg);
+                return;
+            }
+
 			if (Quest.given) {
 				
 				Item item = checkItem();

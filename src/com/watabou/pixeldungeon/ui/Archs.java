@@ -60,8 +60,9 @@ public class Archs extends Component {
 	public void update() {
 		
 		super.update();
-		
-		float shift = Game.elapsed * SCROLL_SPEED;
+
+        // Use original time when shifting scroll
+        float shift = Game.pd3d_elapsed_orig * SCROLL_SPEED;
 		if (reversed) {
 			shift = -shift;
 		}

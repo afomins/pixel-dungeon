@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.ui.RedButton;
@@ -46,7 +48,18 @@ public class WndOptions extends Window {
 		add( tfMesage );
 		
 		float pos = tfMesage.y + tfMesage.height() + MARGIN;
-		
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            msg.quest.title = title;
+            msg.quest.text = message;
+            Pd3d.game.ResetQuest(msg.quest);
+            if(options.length == 0) {
+                msg.quest.actions = null;
+            }
+        }
+
 		for (int i=0; i < options.length; i++) {
 			final int index = i;
 			RedButton btn = new RedButton( options[i] ) {
@@ -60,6 +73,12 @@ public class WndOptions extends Window {
 			add( btn );
 			
 			pos += BUTTON_HEIGHT + MARGIN;
+
+            // PD3D: Continue quest
+            if(msg != null) {
+                Pd3d.game.RegisterQuestAction(
+                  msg.quest, "opt-#" + i, btn);
+            }
 		}
 		
 		resize( WIDTH, (int)pos );

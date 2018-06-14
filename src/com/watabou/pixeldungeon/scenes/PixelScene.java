@@ -36,7 +36,23 @@ import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.effects.BadgeBanner;
 import com.watabou.utils.BitmapCache;
 
-public class PixelScene extends Scene {
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.msg.MsgCommand;
+import com.matalok.pd3d.msg.MsgGetInventory;
+import com.matalok.pd3d.msg.MsgGetScene;
+import com.matalok.pd3d.msg.MsgHeroInteract;
+import com.matalok.pd3d.msg.MsgLocal;
+import com.matalok.pd3d.msg.MsgQuestStart;
+import com.matalok.pd3d.msg.MsgRunGame;
+import com.matalok.pd3d.msg.MsgRunItemAction;
+import com.matalok.pd3d.msg.MsgQuestAction;
+import com.matalok.pd3d.msg.MsgSelectInventoryItem;
+import com.matalok.pd3d.msg.MsgSelectQuickslotItem;
+import com.matalok.pd3d.msg.MsgSwitchScene;
+import com.matalok.pd3d.msg.MsgUpdateScene;
+import com.matalok.pd3d.msg.MsgUpdateSprites;
+
+public class PixelScene extends Scene implements Pd3d.IHook {
 	
 	// Minimum virtual display size for portrait orientation
 	public static final float MIN_WIDTH_P		= 128;
@@ -336,4 +352,29 @@ public class PixelScene extends Scene {
 			
 		}
 	}
+
+    //**************************************************************************
+    // IHook
+    //**************************************************************************
+    @Override public void OnInit() { }
+    @Override public void OnClientConnect() { }
+    @Override public void OnClientDisconnect() { }
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgLocal(MsgLocal req, MsgLocal resp) { return true; }
+    @Override public boolean OnRecvMsgGetScene(MsgGetScene req, MsgGetScene resp) { return true; }
+    @Override public boolean OnRecvMsgUpdateSprites(MsgUpdateSprites req, MsgUpdateSprites resp) { return true; }
+    @Override public boolean OnRecvMsgUpdateScene(MsgUpdateScene req, MsgUpdateScene resp) { return true; }
+    @Override public boolean OnRecvMsgSwitchScene(MsgSwitchScene req, MsgSwitchScene resp) { return true; }
+    @Override public boolean OnRecvMsgHeroInteract(MsgHeroInteract req, MsgHeroInteract resp) { return true; }
+    @Override public boolean OnRecvMsgGetInventory(MsgGetInventory req, MsgGetInventory resp) { return true; }
+    @Override public boolean OnRecvMsgSelectInventoryItem(MsgSelectInventoryItem req, MsgSelectInventoryItem resp) { return true; }
+    @Override public boolean OnRecvMsgSelectQuickslotItem(MsgSelectQuickslotItem req, MsgSelectQuickslotItem resp) { return true; }
+    @Override public boolean OnRecvMsgRunItemAction(MsgRunItemAction req, MsgRunItemAction resp) { return true; }
+    @Override public boolean OnRecvMsgRunGame(MsgRunGame req, MsgRunGame resp) { return true; }
+    @Override public boolean OnRecvMsgCommand(MsgCommand req, MsgCommand resp) { return true; }
+    @Override public boolean OnRecvMsgQuestStart(MsgQuestStart req, MsgQuestStart resp) { return true; }
+    @Override public boolean OnRecvMsgQuestAction(MsgQuestAction req, MsgQuestAction resp) { return true; }
 }

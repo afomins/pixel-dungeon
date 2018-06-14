@@ -34,18 +34,18 @@ public class ScorpioSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 18, 17 );
 		
-		idle = new Animation( 12, true );
+		idle = new Animation( "idle", 12, true );
 		idle.frames( frames, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 1, 2 );
 		
-		run = new Animation( 8, true );
+		run = new Animation( "run", 8, true );
 		run.frames( frames, 5, 5, 6, 6 );
 		
-		attack = new Animation( 15, false );
+		attack = new Animation( "attack", 15, false );
 		attack.frames( frames, 0, 3, 4 );
 		
-		zap = attack.clone();
+		zap = attack.clone("zap");
 		
-		die = new Animation( 12, false );
+		die = new Animation( "die", 12, false );
 		die.frames( frames, 0, 7, 8, 9, 10 );
 		
 		play( idle );

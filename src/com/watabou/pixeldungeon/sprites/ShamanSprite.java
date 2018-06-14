@@ -33,18 +33,18 @@ public class ShamanSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 12, 15 );
 		
-		idle = new Animation( 2, true );
+		idle = new Animation( "idle", 2, true );
 		idle.frames( frames, 0, 0, 0, 1, 0, 0, 1, 1 );
 		
-		run = new Animation( 12, true );
+		run = new Animation( "run", 12, true );
 		run.frames( frames, 4, 5, 6, 7 );
 		
-		attack = new Animation( 12, false );
+		attack = new Animation( "attack", 12, false );
 		attack.frames( frames, 2, 3, 0 );
 		
-		zap = attack.clone();
+		zap = attack.clone("zap");
 		
-		die = new Animation( 12, false );
+		die = new Animation( "die", 12, false );
 		die.frames( frames, 8, 9, 10 );
 		
 		play( idle );

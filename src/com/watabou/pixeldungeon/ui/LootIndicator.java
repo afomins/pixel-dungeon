@@ -25,7 +25,7 @@ public class LootIndicator extends Tag {
 	
 	private ItemSlot slot;
 	
-	private Item lastItem = null;
+	public Item lastItem = null;
 	private int lastQuantity = 0;
 	
 	public LootIndicator() {
@@ -82,7 +82,6 @@ public class LootIndicator extends Tag {
 				
 				lastItem = null;
 				visible = false;
-				
 			}
 		}
 		

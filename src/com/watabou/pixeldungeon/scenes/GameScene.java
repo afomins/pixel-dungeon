@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.scenes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
@@ -36,8 +37,11 @@ import com.watabou.pixeldungeon.FogOfWar;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.Statistics;
 import com.watabou.pixeldungeon.actors.Actor;
+import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.actors.blobs.Blob;
 import com.watabou.pixeldungeon.actors.mobs.Mob;
+import com.watabou.pixeldungeon.actors.mobs.npcs.NPC;
+import com.watabou.pixeldungeon.actors.mobs.npcs.Shopkeeper;
 import com.watabou.pixeldungeon.effects.BannerSprites;
 import com.watabou.pixeldungeon.effects.BlobEmitter;
 import com.watabou.pixeldungeon.effects.EmoIcon;
@@ -47,7 +51,10 @@ import com.watabou.pixeldungeon.effects.Ripple;
 import com.watabou.pixeldungeon.effects.SpellSprite;
 import com.watabou.pixeldungeon.items.Heap;
 import com.watabou.pixeldungeon.items.Item;
+import com.watabou.pixeldungeon.items.TomeOfMastery;
+import com.watabou.pixeldungeon.items.bags.Bag;
 import com.watabou.pixeldungeon.items.potions.Potion;
+import com.watabou.pixeldungeon.items.wands.Wand;
 import com.watabou.pixeldungeon.items.wands.WandOfBlink;
 import com.watabou.pixeldungeon.levels.Level;
 import com.watabou.pixeldungeon.levels.RegularLevel;
@@ -74,6 +81,21 @@ import com.watabou.pixeldungeon.windows.WndGame;
 import com.watabou.pixeldungeon.windows.WndBag;
 import com.watabou.pixeldungeon.windows.WndStory;
 import com.watabou.utils.Random;
+
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.Pd3dGame;
+import com.matalok.pd3d.Pd3dGame.EmitterDesc;
+import com.matalok.pd3d.Pd3dGame.Step;
+import com.matalok.pd3d.desc.*;
+import com.matalok.pd3d.map.Map;
+import com.matalok.pd3d.map.Map.ICell;
+import com.matalok.pd3d.map.MapCell;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.map.MapEnum.TerrainType;
+import com.matalok.pd3d.msg.*;
+import com.matalok.pd3d.shared.ClientAPI;
+import com.matalok.pd3d.shared.Logger;
+import com.matalok.pd3d.shared.Utils;
 
 public class GameScene extends PixelScene {
 	
@@ -113,7 +135,10 @@ public class GameScene extends PixelScene {
 	
 	private Toolbar toolbar;
 	private Toast prompt;
-	
+
+    // PD3D
+    private StatusPane pd3d_sp;
+
 	@Override
 	public void create() {
 		Music.INSTANCE.play( Assets.TUNE, true );
@@ -207,7 +232,7 @@ public class GameScene extends PixelScene {
 		
 		add( cellSelector = new CellSelector( tiles ) );
 		
-		StatusPane sb = new StatusPane();
+		StatusPane sb = pd3d_sp = new StatusPane();
 		sb.camera = uiCamera;
 		sb.setSize( uiCamera.width, 0 );
 		add( sb );
@@ -263,6 +288,7 @@ public class GameScene extends PixelScene {
 			case 22:
 				WndStory.showChapter( WndStory.ID_HALLS );
 				break;
+			default:
 			}
 			if (Dungeon.hero.isAlive() && Dungeon.depth != 22) {
 				Badges.validateNoKilling();
@@ -346,9 +372,10 @@ public class GameScene extends PixelScene {
 		}
 			
 		super.update();
-		
-		water.offset( 0, -5 * Game.elapsed );
-		
+
+        // PD3D: Use original time when rendering water
+        water.offset( 0, -5 * Game.pd3d_elapsed_orig );
+
 		Actor.process();
 		
 		if (Dungeon.hero.ready && !Dungeon.hero.paralysed) {
@@ -599,8 +626,14 @@ public class GameScene extends PixelScene {
 		WndBag wnd = mode == Mode.SEED ?
 			WndBag.seedPouch( listener, mode, title ) :
 			WndBag.lastBag( listener, mode, title );
-		scene.add( wnd );
-		
+
+       // PD3D: Send inventory to client
+       MsgGetInventory msg = MsgGetInventory.CreateRequest(title, 
+         mode.name().toLowerCase(), 
+         listener.getClass().getName().toLowerCase(), null);
+       Pd3d.pd.AddToRecvQueue(msg);
+       Pd3d.game.SetInventoryListener(listener);
+//		scene.add( wnd );
 		return wnd;
 	}
 
@@ -635,4 +668,524 @@ public class GameScene extends PixelScene {
 			return null;
 		}
 	};
+
+    // *************************************************************************
+    // IHook
+    // *************************************************************************
+    @Override public void OnInit() {
+        Pd3d.game.GetStep().SetState(Step.State.DISABLE);
+        Pd3d.game.GetDeadMobs().Clear();
+    }
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgUpdateScene(
+      MsgUpdateScene req, MsgUpdateScene resp) {
+        // Set map size
+        DescSceneGame desc = resp.game_scene = new DescSceneGame();
+        int w = desc.map_width = Level.WIDTH;
+        int h = desc.map_height = Level.HEIGHT;
+
+        // Step counter
+        desc.step = Pd3d.game.GetStep().cnt;
+
+        // Set chars
+        DescChar hero_desc = null;
+        LinkedList<Mob> dead_mobs = Pd3d.game.GetDeadMobs().PopList();
+        LinkedList<Char> chars = new LinkedList<Char>();
+        chars.add(Dungeon.hero);
+        chars.addAll(Dungeon.level.mobs);
+        if(dead_mobs != null) {
+            chars.addAll(dead_mobs);
+        }
+        desc.chars = new LinkedList<DescChar>();
+        for(Char c : chars) {
+            DescChar desc_char = Pd3d.game.GetCharDesc(c);
+            desc.chars.add(desc_char);
+            if(c.id() == 1) {
+                hero_desc = desc_char;
+            }
+        }
+
+        // Set heaps
+        int heap_num = Dungeon.level.heaps.size();
+        desc.heaps = (heap_num > 0) ? new LinkedList<DescHeap>() : null;
+        for(int i = 0; i < heap_num; i++) {
+            Heap heap = Dungeon.level.heaps.valueAt(i);
+            DescHeap heap_desc = new DescHeap();
+            heap_desc.pos = heap.pos;
+            heap_desc.sprite_id = heap.sprite.pd3d_obj_id;
+            desc.heaps.add(heap_desc);
+        }
+
+        // Set plants
+        int plant_num = Dungeon.level.plants.size();
+        desc.plants = (plant_num > 0) ? new LinkedList<DescHeap>() : null;
+        for(int i = 0; i < plant_num; i++) {
+            Plant plant = Dungeon.level.plants.valueAt(i);
+            DescHeap heap_desc = new DescHeap();
+            heap_desc.pos = plant.pos;
+            heap_desc.sprite_id = plant.sprite.pd3d_obj_id;
+            desc.plants.add(heap_desc);
+        }
+
+        // Camera events
+        if(Camera.main.pd3d_shake_event) {
+            Camera.main.pd3d_shake_event = false;
+            Pd3d.game.AddEvent(MapEnum.EventType.CAMERA_SHAKE);
+        }
+
+        // Emitter events
+        LinkedList<EmitterDesc> emitters = Pd3d.game.GetEmitters().PopList();
+        if(emitters != null) {
+            for(EmitterDesc e : emitters) {
+                // Target of emitter
+                Integer target = (e.target instanceof Integer) ? 
+                  (Integer)e.target : null;
+                if(target == null) {
+                    continue;
+                }
+
+                // Emitter event
+                DescEvent event = (DescEvent)e.emitter.factory.Pd3dGetEvent();
+                if(event == null) {
+                    Logger.e("Ignoring emitter event :: factory=%s", 
+                      e.emitter.factory.toString());
+                    continue;
+                }
+
+                event.cell_id = target;
+                Pd3d.game.AddEvent(event);
+            }
+            emitters.clear();
+        }
+
+        // Events
+        desc.events = Pd3d.game.GetEvents().PopList();
+
+        // Interrupt hero movement
+        desc.interrupt = Dungeon.hero.pd3d_interrupt;
+        Dungeon.hero.pd3d_interrupt = null;
+        if(desc.interrupt == null && dead_mobs != null) {
+            desc.interrupt = "target-reached";
+        }
+
+        // Loot item
+        pd3d_sp.loot.update();
+        if(pd3d_sp.loot.lastItem != null) {
+            desc.loot_item_id = pd3d_sp.loot.lastItem.image();
+        }
+
+        // Quickslots
+        desc.quickslot0 = Pd3d.game.GetItemDesc(
+          QuickSlot.Pd3dGetItem(0), WndBag.Mode.ALL);
+        desc.quickslot1 = Pd3d.game.GetItemDesc(
+          QuickSlot.Pd3dGetItem(1), WndBag.Mode.ALL);
+
+        // Hero stats
+        desc.hero_stats = Pd3d.game.GetHeroStatsDesc(hero_desc);
+
+        // Dungeon depth
+        desc.dungeon_depth = Dungeon.depth;
+
+        // Reset checksum of the map
+        desc.map_csum = 0;
+
+        // Update map
+        ClientAPI client_api = Pd3d.pd.GetClientAPI();
+        Map map = (client_api != null) ? 
+          client_api.GetMap(w, h) : Pd3d.game.GetMap(w, h);
+        Pd3dGame.LevelDesc level = new Pd3dGame.LevelDesc(Dungeon.level);
+        ICell[] cells = map.GetCells();
+        for(int i = 0; i < w * h; i++) {
+            MapCell cell = (MapCell)cells[i];
+            TerrainType new_terrain_type = level.GetType(i);
+            cell.flags = level.GetFlags(i,
+              (new_terrain_type != cell.type), cell.flags);
+            cell.type = new_terrain_type;
+            desc.map_csum += cell.GetCsum();
+        }
+
+        // Serialize map
+        if(client_api == null) {
+            desc.map_srlz = map.SerializeMap();
+        }
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgHeroInteract(
+      MsgHeroInteract req, MsgHeroInteract resp) {
+        int hero_pos = Dungeon.hero.pos;
+        Step.State step_state = null;
+
+        // Move hero
+        String type = req.interact_type;
+        if(type.startsWith("move-")) {
+            type = type.substring("move-".length());
+
+            // Select destination cell
+            int dest_idx = hero_pos;
+            int next_step_idx = -1;
+            switch(type) {
+            // Find destination cell relative to hero position
+            case "n":   dest_idx -= Level.WIDTH;       break;  // Up
+            case "s":   dest_idx += Level.WIDTH;       break;  // Down
+            case "e":   dest_idx += 1;                 break;  // Left
+            case "w":   dest_idx -= 1;                 break;  // Right
+            case "ne":  dest_idx -= (Level.WIDTH - 1); break;  // Up-Right
+            case "nw":  dest_idx -= (Level.WIDTH + 1); break;  // Up-Left
+            case "se":  dest_idx += Level.WIDTH + 1;   break;  // Down-Right
+            case "sw":  dest_idx += Level.WIDTH - 1;   break;  // Down-Left
+
+            // Find destination cell by index
+            default: 
+                try {
+                    dest_idx = Integer.parseInt(type);
+                }
+                catch(Exception ex) {
+                    Utils.LogException(ex, "Failed to parse cell index :: idx=%s", type);
+                    dest_idx = -1;
+                }
+            }
+
+            // Validate destination index
+            if(dest_idx < 0 || dest_idx >= Level.LENGTH) {
+                dest_idx = hero_pos;
+            }
+
+            // Reach destination in one step
+            Dungeon.hero.pd3d_dest_in_one_step = Level.adjacent(hero_pos, dest_idx);
+            if(Dungeon.hero.pd3d_dest_in_one_step) {
+                next_step_idx = dest_idx;
+
+            // Get closer to target cell if more than one step away
+            } else {
+                next_step_idx = Dungeon.findPath(Dungeon.hero, hero_pos, dest_idx, 
+                 Level.passable, Level.fieldOfView);
+            }
+
+            // Do interrupt if target can not be reached
+            if(next_step_idx == -1) {
+                Dungeon.hero.pd3d_interrupt = "target-reached";
+
+            // Target can be reached
+            } else {
+                Dungeon.hero.handle(next_step_idx);
+
+                // Check if hero needs to be interrupted
+                if(req.try_interrupt) {
+                    // Hero reached destination cell
+                    hero_pos = Dungeon.hero.pos;
+                    if(dest_idx == hero_pos) {
+                        Dungeon.hero.pd3d_interrupt = "target-reached";
+    
+                    // Hero stopped one step from destination cell
+                    } else if(Dungeon.hero.pd3d_dest_in_one_step && 
+                      Level.adjacent(hero_pos, dest_idx)) {
+                        // Destination cell is not reachable or it is occupied by enemy char
+                        if(!Level.passable[dest_idx] || Actor.findChar(dest_idx) != null) {
+                            Dungeon.hero.pd3d_interrupt = "target-reached";
+                        }
+                    }
+                }
+            }
+            step_state = Step.State.ENABLE_ONE;
+
+        // Select cell
+        } else if(type.equals("select-cell")) {
+            Dungeon.hero.handle(req.cell_idx);
+            step_state = Step.State.ENABLE_ONE;
+
+        // Search nearby cells
+        } else if(type.equals("search")) {
+            if(pd3d_sp.loot.lastItem != null) {
+                Dungeon.hero.handle(Dungeon.hero.pos);
+//                Dungeon.hero.sprite.showStatus(CharSprite.DEFAULT, "^^^");
+            } else {
+                Dungeon.hero.search(true);
+            }
+            step_state = Step.State.ENABLE_ONE;
+
+        // Rest
+        } else if(type.equals("rest")) {
+            Dungeon.hero.rest(false);
+            step_state = Step.State.ENABLE_ONE;
+
+        // Rest until hero restores full health
+        } else if(type.equals("rest-till-healthy")) {
+            Dungeon.hero.rest(true);
+            step_state = Step.State.ENABLE_ONE;
+
+        // Idle
+        } else if(type.equals("idle")) {
+            step_state = Step.State.ENABLE_ALL;
+        }
+
+        // Move game time forward
+        if(step_state != null) {
+            if(Actor.current != null) {
+                Actor.current.next();
+            }
+            Pd3d.game.GetStep().SetState(step_state);
+        }
+        return false;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgGetInventory(
+      MsgGetInventory req, MsgGetInventory resp) {
+        // Get mode
+        WndBag.Mode mode = null;
+        try {
+            mode = WndBag.Mode.valueOf(req.mode.toUpperCase());
+        } catch(Exception ex) {
+            Utils.LogException(ex, "Failed to get inventory, wrong mode");
+            return true;
+        }
+
+        // Set mode & listener
+        resp.mode = mode.toString().toLowerCase();
+        resp.listener = req.listener;
+        resp.listener_ex = req.listener_ex;
+
+        // Gold
+        resp.gold_num = Dungeon.gold;
+
+        // Quickslot mode
+        if(resp.listener.equals("quickslot")) {
+            resp.title = QuickSlot.TXT_SELECT_ITEM + " #" + resp.listener_ex;
+
+        // Other modes
+        } else {
+            resp.title = req.title;
+        }
+
+        // Create list of bags
+        LinkedList<Bag> bags = new LinkedList<Bag>();
+        bags.add(Dungeon.hero.belongings.backpack);
+        for(Item item : Dungeon.hero.belongings.backpack) {
+            if(item instanceof Bag) {
+                bags.add((Bag)item);
+            }
+        }
+
+        // Set bags
+        resp.bags = new LinkedList<DescBag>();
+        for(Bag bag : bags) {
+            DescBag bag_desc = new DescBag();
+            bag_desc.name = bag.name();
+            bag_desc.items = (bag.items.size() > 0) ? new LinkedList<DescItem>() : null;
+            for(Item item : bag.items) {
+                bag_desc.items.add(Pd3d.game.GetItemDesc(item, mode));
+            }
+            resp.bags.add(bag_desc);
+        }
+
+        // Put all equipped items in virtual "equipped" bag
+        Item equipped_items[] = new Item[] {
+            Dungeon.hero.belongings.weapon,
+            Dungeon.hero.belongings.armor,
+            Dungeon.hero.belongings.ring1,
+            Dungeon.hero.belongings.ring2,
+        };
+        DescBag equipped_bag = new DescBag();
+        equipped_bag.name = "equipped";
+        for(Item item : equipped_items) {
+            if(item == null) {
+                continue;
+            }
+            if(equipped_bag.items == null) {
+                equipped_bag.items = new LinkedList<DescItem>();
+            }
+            equipped_bag.items.add(Pd3d.game.GetItemDesc(item, mode));
+        }
+        resp.bags.add(equipped_bag);
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgSelectQuickslotItem(
+      MsgSelectQuickslotItem req, MsgSelectQuickslotItem resp) {
+        // Find item by index
+        Item item = Pd3d.game.GetInventoryItem(req.item_idx, null);
+        if(item == null) {
+            Logger.e("Failed to select quickslot item, item not found :: quickslot=%d item=%d", 
+              req.quickslot_idx, req.item_idx);
+            return true;
+        }
+
+        // Put item to quickslot
+        QuickSlot.Pd3dPutItem(req.quickslot_idx, item);
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgSelectInventoryItem(
+      MsgSelectInventoryItem req, MsgSelectInventoryItem resp) {
+        // Find item by index
+        Item item = Pd3d.game.GetInventoryItem(req.item_idx, null);
+        if(item == null) {
+            Logger.e("Failed to select inventory item, item not found :: item=%d", 
+              req.item_idx);
+            return true;
+        }
+
+        // Get inventory listener
+        WndBag.Listener listener = Pd3d.game.GetInventoryListener();
+        if(listener == null) {
+            Logger.e("Failed to select inventory item, no inventory listener :: item=%d", 
+              req.item_idx);
+            return true;
+        }
+
+        // Run selection handler
+        listener.onSelect(item);
+
+        // Move game time forward by one step
+        Pd3d.game.GetStep().SetState(Step.State.ENABLE_ONE);
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgRunItemAction(
+      MsgRunItemAction req, MsgRunItemAction resp) {
+        // Search for item in quickslots if item index is negative
+        Item item = null;
+        if(req.item_idx < 0) {
+            req.item_idx = -req.item_idx - 1;
+            item = QuickSlot.Pd3dGetItem(req.item_idx);
+
+        // Search for item in inventory
+        } else { 
+            item = Pd3d.game.GetInventoryItem(req.item_idx, null);
+        }
+
+        // Item should be present
+        if(item == null) {
+            resp.SetStatus(false, "Failed to run item action, no item");
+            return true;
+        }
+
+        // Set action
+        resp.action = req.action;
+
+        // Run item action on target cell
+        if(req.dest_cell_idx != null) {
+            if(req.action.equals("throw")) {
+                Item.Pd3dThrow(Dungeon.hero, item, req.dest_cell_idx);
+            } else if(req.action.equals("zap")) {
+                Wand.Pd3dZap(Dungeon.hero, item, req.dest_cell_idx);
+            } else {
+                resp.SetStatus(false, "Failed to run remote item action");
+                return true;
+            }
+            resp.src_cell_idx = Dungeon.hero.pos;
+            resp.dest_cell_idx = Pd3d.game.GetTargetCell();
+            resp.sprite_id = item.image();
+            resp.do_circle_back = Pd3d.game.GetCircleBack();
+
+        // Execute default item action
+        } else {
+            item.execute(Dungeon.hero, req.action.toUpperCase());
+        }
+
+        // Move game time forward by one step
+        Pd3d.game.GetStep().SetState(Step.State.ENABLE_ONE);
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgQuestStart(MsgQuestStart req, MsgQuestStart resp) {
+        // Copy quest data from request
+        resp.quest = req.quest;
+
+        // Process quests
+        switch(req.quest.name) {
+        //......................................................................
+        case "read-tome-of-mastery": {
+            Item item = Pd3d.game.GetQuestItem(
+              req.quest.name, req.quest.target_item_id);
+            if(item == null) {
+                resp.SetStatus(false, 
+                  "Failed to start quest, no item :: name=%s", req.quest.name);
+                break;
+            }
+
+            // Start quest
+            item.execute(Dungeon.hero, TomeOfMastery.AC_READ);
+        } break;
+
+        //......................................................................
+        case "buy-item": {
+            // Start quest
+            Dungeon.hero.handle(req.quest.target_cell_id);
+        } break;
+
+        //......................................................................
+        case "sell-item": 
+        case "apply-weightstone": {
+            // Find item in inventory
+            Item item = Pd3d.game.GetInventoryItem(
+              req.quest.target_item_id, null);
+            if(item == null) {
+                resp.SetStatus(false, 
+                  "Failed to start quest, no item :: name=%s", req.quest.name);
+                break;
+            }
+
+            // Get inventory listener
+            WndBag.Listener listener = Pd3d.game.GetInventoryListener();
+            if(listener == null) {
+                resp.SetStatus(false, 
+                  "Failed to start quest, no inventory listener :: item=%d", 
+                  item.m_pd3d_id);
+                break;
+            }
+
+            // Start quest
+            Logger.d("Running inventory listener :: listener=%s", listener.toString());
+            listener.onSelect(item);
+        } break;
+
+        //......................................................................
+        case "jump-chasm": {
+            Chasm.heroJump(Dungeon.hero);
+        } break;
+
+        //......................................................................
+        // Default NPC quest
+        default: {
+            NPC npc = Pd3d.game.GetQuestNpc(
+              req.quest.name, req.quest.target_char_id); 
+            if(npc == null) {
+                resp.SetStatus(false, 
+                  "Failed to start quest, no char :: name=%s", req.quest.name);
+                break;
+            }
+
+            // Start quest
+            npc.interact();
+        } break;
+        }
+        return req.quest.need_response;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgQuestAction(
+      MsgQuestAction req, MsgQuestAction resp) {
+        // Run quest action
+        Pd3d.game.RunQuestAction(req.action);
+
+        // Post-quest actions
+        String qname = Pd3d.game.GetQuestName();
+        switch(qname) {
+        case "sell-item": {
+            Logger.d("Restarting %s quest", qname);
+            Shopkeeper.sell();
+        }
+        }
+        return true;
+    }
 }

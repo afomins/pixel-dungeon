@@ -34,16 +34,16 @@ public class EyeSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 16, 18 );
 		
-		idle = new Animation( 8, true );
+		idle = new Animation( "idle", 8, true );
 		idle.frames( frames, 0, 1, 2 );
 		
-		run = new Animation( 12, true );
+		run = new Animation( "run", 12, true );
 		run.frames( frames, 5, 6 );
 		
-		attack = new Animation( 8, false );
+		attack = new Animation( "attack", 8, false );
 		attack.frames( frames, 4, 3 );
 		
-		die = new Animation( 8, false );
+		die = new Animation( "die", 8, false );
 		die.frames( frames, 7, 8, 9 );
 		
 		play( idle );

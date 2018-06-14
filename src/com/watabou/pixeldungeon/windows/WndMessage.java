@@ -17,6 +17,7 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.scenes.PixelScene;
@@ -42,5 +43,8 @@ public class WndMessage extends Window {
 		resize( 
 			(int)info.width() + MARGIN * 2, 
 			(int)info.height() + MARGIN * 2 );
+
+        // Pd3d
+        Pd3d.pd.GetInfoList().Add(text);
 	}
 }

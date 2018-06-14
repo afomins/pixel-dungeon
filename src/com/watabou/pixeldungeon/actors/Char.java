@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.actors;
 
 import java.util.HashSet;
 
+import com.matalok.pd3d.shared.Logger;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
@@ -94,6 +95,7 @@ public abstract class Char extends Actor {
 	@Override
 	protected boolean act() {
 		Dungeon.level.updateFieldOfView( this );
+        Logger.d("Acting :: name=%s pos=%d", name, pos);
 		return false;
 	}
 	
@@ -132,7 +134,12 @@ public abstract class Char extends Actor {
 	public boolean attack( Char enemy ) {
 		
 		boolean visibleFight = Dungeon.visible[pos] || Dungeon.visible[enemy.pos];
-		
+
+        // PD3D: enemy is null when mining ore
+        if(enemy == null) {
+            Logger.d("Dummy attack");
+            return false;
+        } else
 		if (hit( this, enemy, false )) {
 			
 			if (visibleFight) {
@@ -155,7 +162,7 @@ public abstract class Char extends Actor {
 			}
 
 			if (enemy == Dungeon.hero) {
-				Dungeon.hero.interrupt();
+				Dungeon.hero.interrupt(null);
 				if (effectiveDamage > enemy.HT / 4) {
 					Camera.main.shake( GameMath.gate( 1, effectiveDamage / (enemy.HT / 4), 5), 0.3f );
 				}

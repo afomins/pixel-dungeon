@@ -19,6 +19,11 @@ package com.watabou.pixeldungeon.actors.mobs.npcs;
 
 import java.util.Collection;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
@@ -80,11 +85,38 @@ public class Blacksmith extends NPC {
 	
 	@Override
 	public void interact() {
-		
+        // PD3D: Start quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+        if(msg == null) {
+            msg = MsgQuestStart.CreateRequest();
+            msg.quest = new DescQuest();
+            msg.quest.need_response = true;
+            msg.quest.title = name;
+            msg.quest.target_char_id = id();
+            msg.quest.sprite_id = new DescSpriteInst();
+            msg.quest.sprite_id.type = "char";
+            msg.quest.sprite_id.id = MapEnum.CharType.BLACKSMITH.ordinal();
+
+            // Start main quest
+            if (!Quest.given || !Quest.completed || Quest.reforged) {
+                msg.quest.name = "blacksmith";
+
+            // Start reforge quest
+            } else {
+                msg.quest.name = "blacksmith-reforge";
+                msg.quest.target_item_id = -1;
+                msg.quest.target_item_id2 = -1;
+            }
+            Pd3d.pd.AddToRecvQueue(msg);
+            return;
+
+        // Update reforge quest
+        } else if(msg.quest.name.equals("blacksmith-reforge-update")) {
+            return;
+        }
+
 		sprite.turnTo( pos, Dungeon.hero.pos );
-		
 		if (!Quest.given) {
-			
 			GameScene.show( new WndQuest( this, 
 				Quest.alternative ? TXT_BLOOD_1 : TXT_GOLD_1 ) {
 				

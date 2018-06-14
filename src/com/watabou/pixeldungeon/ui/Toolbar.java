@@ -46,6 +46,20 @@ import com.watabou.pixeldungeon.windows.WndTradeItem;
 
 public class Toolbar extends Component {
 
+    public enum Icons {
+        WAIT( 0, 7, 20, 25 ),
+        SEARCH( 20, 7, 20, 25 ),
+        INFO( 40, 7, 21, 25 ), 
+        INVENTORY( 60, 7, 23, 25 ),
+        QUICK( 83, 7, 22, 25 );
+
+        public int pd3d_x0, pd3d_y0, pd3d_x1, pd3d_y1;
+        private Icons(int x0, int y0, int x1, int y1) {
+            pd3d_x0 = x0; pd3d_y0 = y0;
+            pd3d_x1 = x0 + x1; pd3d_y1 = y0 + y1;
+        }
+    }
+
 	private Tool btnWait;
 	private Tool btnSearch;
 	private Tool btnInfo;

@@ -33,18 +33,18 @@ public class WarlockSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 12, 15 );
 		
-		idle = new Animation( 2, true );
+		idle = new Animation( "idle", 2, true );
 		idle.frames( frames, 0, 0, 0, 1, 0, 0, 1, 1 );
 		
-		run = new Animation( 15, true );
+		run = new Animation( "run", 15, true );
 		run.frames( frames, 0, 2, 3, 4 );
 		
-		attack = new Animation( 12, false );
+		attack = new Animation( "attack", 12, false );
 		attack.frames( frames, 0, 5, 6 );
 		
-		zap = attack.clone();
+		zap = attack.clone("zap");
 		
-		die = new Animation( 15, false );
+		die = new Animation( "die", 15, false );
 		die.frames( frames, 0, 7, 8, 8, 9, 10 );
 		
 		play( idle );
@@ -62,6 +62,10 @@ public class WarlockSprite extends MobSprite {
 					((Warlock)ch).onZapComplete();
 				}
 			} );
+
+        // PD3D: call emitter callback manually (see Emmitter::update() for details) 
+        ((Warlock)ch).onZapComplete();
+
 		Sample.INSTANCE.play( Assets.SND_ZAP );
 	}
 	

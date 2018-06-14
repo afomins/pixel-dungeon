@@ -19,6 +19,10 @@ package com.watabou.pixeldungeon.scenes;
 
 import java.io.FileNotFoundException;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescSceneInterlevel;
+import com.matalok.pd3d.msg.*;
+import com.matalok.pd3d.shared.Logger;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
@@ -70,7 +74,10 @@ public class InterlevelScene extends PixelScene {
 	
 	private Thread thread;
 	private String error = null;
-	
+
+    // PD3D
+    private String pd3d_description;
+
 	@Override
 	public void create() {
 		super.create();
@@ -97,7 +104,10 @@ public class InterlevelScene extends PixelScene {
 			break;
 		default:
 		}
-		
+
+        // PD3D
+        pd3d_description = text;
+
 		message = PixelScene.createText( text, 9 );
 		message.measure();
 		message.x = (Camera.main.width - message.width()) / 2; 
@@ -150,7 +160,18 @@ public class InterlevelScene extends PixelScene {
 					error = ERR_GENERIC;
 					
 				}
-				
+
+                // PD3D 
+                if(error == null) {
+                    Logger.d("Finishing inter-level scene :: mode=%s", mode);
+                } else {
+                    Logger.e("Failed to finish inter-level scene :: mode=%s error=%s", 
+                      mode, error);
+                }
+
+                // PD3D: update level texture 
+                Pd3d.sprite.SetTerrain(Dungeon.level.tilesTex(), Dungeon.level.waterTex());
+
 				if (phase == Phase.STATIC && error == null) {
 					phase = Phase.FADE_OUT;
 					timeLeft = TIME_TO_FADE;
@@ -170,7 +191,8 @@ public class InterlevelScene extends PixelScene {
 		
 		case FADE_IN:
 			message.alpha( 1 - p );
-			if ((timeLeft -= Game.elapsed) <= 0) {
+            // PD3D: use original time when fading
+			if ((timeLeft -= Game.pd3d_elapsed_orig) <= 0) {
 				if (!thread.isAlive() && error == null) {
 					phase = Phase.FADE_OUT;
 					timeLeft = TIME_TO_FADE;
@@ -185,7 +207,8 @@ public class InterlevelScene extends PixelScene {
 			if (mode == Mode.CONTINUE || (mode == Mode.DESCEND && Dungeon.depth == 1)) {
 				Music.INSTANCE.volume( p );
 			}
-			if ((timeLeft -= Game.elapsed) <= 0) {
+            // PD3D: use original time when fading
+			if ((timeLeft -= Game.pd3d_elapsed_orig) <= 0) {
 				Game.switchScene( GameScene.class );
 			}
 			break;
@@ -297,4 +320,15 @@ public class InterlevelScene extends PixelScene {
 	protected void onBackPressed() {
 		// Do nothing
 	}
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgUpdateScene(
+      MsgUpdateScene req, MsgUpdateScene resp) {
+        // Set inter-level description
+        DescSceneInterlevel desc = resp.interlevel_scene = new DescSceneInterlevel();
+        desc.description = pd3d_description;
+        return true;
+    }
 }

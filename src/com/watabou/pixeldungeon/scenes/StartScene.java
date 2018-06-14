@@ -17,7 +17,12 @@
  */
 package com.watabou.pixeldungeon.scenes;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.BitmapTextMultiline;
@@ -33,8 +38,10 @@ import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.GamesInProgress;
+import com.watabou.pixeldungeon.GamesInProgress.Info;
 import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.actors.hero.HeroClass;
+import com.watabou.pixeldungeon.actors.hero.HeroSubClass;
 import com.watabou.pixeldungeon.effects.BannerSprites;
 import com.watabou.pixeldungeon.effects.Speck;
 import com.watabou.pixeldungeon.effects.BannerSprites.Type;
@@ -48,6 +55,10 @@ import com.watabou.pixeldungeon.windows.WndClass;
 import com.watabou.pixeldungeon.windows.WndMessage;
 import com.watabou.pixeldungeon.windows.WndOptions;
 import com.watabou.utils.Callback;
+
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.*;
+import com.matalok.pd3d.msg.*;
 
 public class StartScene extends PixelScene {
 
@@ -524,4 +535,81 @@ public class StartScene extends PixelScene {
 			Sample.INSTANCE.play( Assets.SND_CLICK );
 		}
 	}
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgUpdateScene(
+      MsgUpdateScene req, MsgUpdateScene resp) {
+        DescSceneStart desc = resp.start_scene = new DescSceneStart();
+        desc.heros = new LinkedList<DescHero>();
+
+        // Heros
+        SortedMap<HeroClass, HeroSubClass[]> hero_classes = 
+          new TreeMap<HeroClass, HeroSubClass[]>();
+        hero_classes.put(HeroClass.WARRIOR,
+          new HeroSubClass[] { HeroSubClass.GLADIATOR, HeroSubClass.BERSERKER });
+        hero_classes.put(HeroClass.MAGE,
+          new HeroSubClass[] { HeroSubClass.BATTLEMAGE, HeroSubClass.WARLOCK });
+        hero_classes.put(HeroClass.ROGUE,
+          new HeroSubClass[] { HeroSubClass.FREERUNNER, HeroSubClass.ASSASSIN });
+        hero_classes.put(HeroClass.HUNTRESS, 
+          new HeroSubClass[] { HeroSubClass.SNIPER, HeroSubClass.WARDEN });
+        for(Entry<HeroClass, HeroSubClass[]> entry : hero_classes.entrySet()) {
+            HeroClass c = entry.getKey(); 
+            HeroSubClass[] sub = entry.getValue();
+
+            // Hero mastery
+            String mastery = "";
+            for(int i = 0; i < sub.length; i++) {
+                mastery += sub[i].title() + "\n" + sub[i].desc();
+                if(i != sub.length - 1) {
+                    mastery += "\n\n";
+                }
+            }
+
+            // Game status
+            Info info = GamesInProgress.check(c);
+
+            // Set hero descriptor
+            DescHero hero_desc = new DescHero();
+            hero_desc.id = c.ordinal();
+            hero_desc.is_locked = (c == HeroClass.HUNTRESS) ? !huntressUnlocked : false;
+            hero_desc.depth = (info == null) ? 0 : info.depth;
+            hero_desc.level = (info == null) ? 0 : info.level;
+            hero_desc.has_challenges = (info == null) ? false : info.challenges;
+            hero_desc.mastery = mastery;
+            hero_desc.perks = new LinkedList<String>(Arrays.asList(c.perks()));
+            desc.heros.add(hero_desc);
+        }
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgRunGame(MsgRunGame req, MsgRunGame resp) {
+        // Get hero class
+        HeroClass hero = Pd3d.names.GetHeroClass(req.hero_name);
+        if(hero == null) {
+            resp.SetStatus(
+              false, "Hero name is invalid :: name=%s", req.hero_name);
+            return true;
+        }
+
+        // Select new hero
+        updateClass(hero);
+
+        // Run new game
+        if(req.game_type.equals("new")) {
+            startNewGame();
+
+        // Continue old game
+        } else {
+            InterlevelScene.mode = InterlevelScene.Mode.CONTINUE;
+            Game.switchScene(InterlevelScene.class);
+        }
+
+        // Send hero name in response
+        resp.hero_name = req.hero_name;
+        return true;
+    }
 }

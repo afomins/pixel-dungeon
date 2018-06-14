@@ -17,6 +17,9 @@
  */
 package com.watabou.pixeldungeon.effects.particles;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescPfxMutator;
+import com.matalok.pd3d.map.MapEnum;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.particles.PixelParticle;
 import com.watabou.noosa.particles.Emitter.Factory;
@@ -37,6 +40,13 @@ public class LeafParticle extends PixelParticle.Shrinking {
 			p.color( ColorMath.random( 0x004400, 0x88CC44 ) );
 			p.reset( x, y );
 		}
+
+        // PD3D
+        @Override public Object Pd3dGetEvent() {
+            Integer c = ColorMath.random(0x00440000, 0x88CC4400);
+            return Pd3d.game.CreateEvent(MapEnum.EventType.PFX_LEAF)
+              .SetPfxMutator(DescPfxMutator.Field.COLORS, c);
+        }
 	};
 	
 	public static final Emitter.Factory LEVEL_SPECIFIC = new Factory() {	
@@ -46,6 +56,14 @@ public class LeafParticle extends PixelParticle.Shrinking {
 			p.color( ColorMath.random( Dungeon.level.color1, Dungeon.level.color2 ) );
 			p.reset( x, y );
 		}
+
+        // PD3D
+        @Override public Object Pd3dGetEvent() {
+            Integer c = ColorMath.random(
+              Dungeon.level.color1, Dungeon.level.color2) << 8;
+            return Pd3d.game.CreateEvent(MapEnum.EventType.PFX_LEAF)
+              .SetPfxMutator(DescPfxMutator.Field.COLORS, c);
+        }
 	};
 	
 	public LeafParticle() {

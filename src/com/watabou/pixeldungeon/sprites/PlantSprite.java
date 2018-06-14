@@ -39,7 +39,10 @@ public class PlantSprite extends Image {
 	private static TextureFilm frames;
 	
 	private int pos = -1;
-	
+
+    // PD3D
+    public int pd3d_obj_id;  // ID of the plant 
+
 	public PlantSprite() {
 		super( Assets.PLANTS );
 		
@@ -72,6 +75,9 @@ public class PlantSprite extends Image {
 	
 	public void reset( int image ) {
 		frame( frames.get( image ) );
+
+        // PD3D
+        pd3d_obj_id = image;
 	}
 	
 	@Override

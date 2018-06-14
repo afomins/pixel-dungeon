@@ -23,11 +23,17 @@ import com.watabou.pixeldungeon.Assets;
 public class BannerSprites {
 
 	public enum  Type {
-		PIXEL_DUNGEON,
-		BOSS_SLAIN,
-		GAME_OVER,
-		SELECT_YOUR_HERO,
-		PIXEL_DUNGEON_SIGNS
+		PIXEL_DUNGEON( 0, 0, 128, 70 ),
+		BOSS_SLAIN( 0, 70, 128, 105 ),
+		GAME_OVER( 0, 105, 128, 140 ),
+		SELECT_YOUR_HERO( 0, 140, 128, 161 ),
+		PIXEL_DUNGEON_SIGNS( 0, 161, 128, 218 );
+
+       public int pd3d_x0, pd3d_y0, pd3d_x1, pd3d_y1;
+        private Type(int x0, int y0, int x1, int y1) {
+            pd3d_x0 = x0; pd3d_y0 = y0;
+            pd3d_x1 = x1; pd3d_y1 = y1;
+        }
 	};
 	
 	public static Image get( Type type ) {

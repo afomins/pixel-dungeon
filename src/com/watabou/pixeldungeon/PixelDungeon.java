@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon;
 
+import java.io.IOException;
+
 import javax.microedition.khronos.opengles.GL10;
 
 import android.annotation.SuppressLint;
@@ -30,14 +32,36 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.scenes.GameScene;
+import com.watabou.pixeldungeon.scenes.InterlevelScene;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.scenes.TitleScene;
 
-public class PixelDungeon extends Game {
-	
-	public PixelDungeon() {
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.msg.Msg;
+import com.matalok.pd3d.msg.MsgCommand;
+import com.matalok.pd3d.msg.MsgGetInventory;
+import com.matalok.pd3d.msg.MsgGetScene;
+import com.matalok.pd3d.msg.MsgHeroInteract;
+import com.matalok.pd3d.msg.MsgLocal;
+import com.matalok.pd3d.msg.MsgQuestStart;
+import com.matalok.pd3d.msg.MsgRunGame;
+import com.matalok.pd3d.msg.MsgRunItemAction;
+import com.matalok.pd3d.msg.MsgQuestAction;
+import com.matalok.pd3d.msg.MsgSelectInventoryItem;
+import com.matalok.pd3d.msg.MsgSelectQuickslotItem;
+import com.matalok.pd3d.msg.MsgSwitchScene;
+import com.matalok.pd3d.msg.MsgUpdateScene;
+import com.matalok.pd3d.msg.MsgUpdateSprites;
+import com.matalok.pd3d.shared.Logger;
+import com.matalok.pd3d.shared.Utils;
+
+public class PixelDungeon extends Game implements Pd3d.IHook {
+	public PixelDungeon(boolean is_remote_server) {
 		super( TitleScene.class );
-		
+
+        // PD3D - initialize
+        Pd3d.Initialize(this, is_remote_server);
+
 		com.watabou.utils.Bundle.addAlias( 
 			com.watabou.pixeldungeon.items.scrolls.ScrollOfUpgrade.class, 
 			"com.watabou.pixeldungeon.items.scrolls.ScrollOfEnhancement" );
@@ -126,6 +150,9 @@ public class PixelDungeon extends Game {
 	protected void onCreate( Bundle savedInstanceState ) {
 		super.onCreate( savedInstanceState );
 		
+        // PD3D
+        Pd3d.sprite.RegisterSprites();
+		
 		updateImmersiveMode();
 		
 		DisplayMetrics metrics = new DisplayMetrics();
@@ -136,8 +163,8 @@ public class PixelDungeon extends Game {
 			landscape( !landscape );
 		}
 		
-		Music.INSTANCE.enable( music() );
-		Sample.INSTANCE.enable( soundFx() );
+		Music.INSTANCE.enable( false /*music()*/ );
+		Sample.INSTANCE.enable( false /*soundFx()*/ );
 		
 		Sample.INSTANCE.load( 
 			Assets.SND_CLICK, 
@@ -358,4 +385,256 @@ public class PixelDungeon extends Game {
 	public static void reportException( Throwable tr ) {
 		Log.e( "PD", Log.getStackTraceString( tr ) ); 
 	}
+
+    // *************************************************************************
+    // PixeDungeon
+    // *************************************************************************
+    private boolean pd3d_no_save;
+
+    //--------------------------------------------------------------------------
+    public PixelDungeon() {
+        this(true); // Run pixel dungeon as remote server
+    }
+
+    //--------------------------------------------------------------------------
+    public boolean OnRequest(Msg req, Msg resp) {
+        if(!Pd3d.OnRecvRequest(this, req, resp)) {
+            return false;
+        }
+
+        // Send bad response
+        if(!resp.status_code) {
+            return true;
+        }
+
+        // Forward request to current scene
+        return Pd3d.OnRecvRequest((PixelScene)scene, req, resp);
+    }
+
+    // *************************************************************************
+    // Game
+    // *************************************************************************
+    @Override protected void update() {
+        Pd3d.pd.Process();
+        super.update();
+    }
+
+    //--------------------------------------------------------------------------
+    @Override protected void switchScene() {
+        // Get names of old and new scenes
+        String old_name = (scene == null) ? "none" : 
+          Pd3d.names.GetSceneName((PixelScene)scene); 
+        String new_name = Pd3d.names.GetSceneName(
+          (PixelScene)requestedScene);
+
+        // Check if old/new scenes are known
+        if(old_name == null && new_name == null) {
+            if(old_name == null) old_name = scene.getClass().getSimpleName();
+            if(new_name == null) new_name = requestedScene.getClass().getSimpleName();
+            Logger.e("Failed to switch scenes :: %s -> %s", old_name, new_name);
+
+        // Update scene on client
+        } else {
+            Logger.d("Switching scene :: %s -> %s", old_name, new_name);
+            if(scene != null) {
+                Pd3d.pd.AddToRecvQueue(
+                  MsgGetScene.CreateRequest());
+            }
+
+            // Save game
+            if(old_name == "scene-game" && !pd3d_no_save) {
+                try {
+                    Dungeon.saveAll();
+                } catch (IOException e) {
+                    Utils.LogException(e, "Failed to save game while switching scene");
+                }
+            }
+            pd3d_no_save = false;
+        }
+
+        // Switch scene
+        super.switchScene();
+
+        // Original game speed
+        Game.pd3d_elapsed_orig = Game.elapsed;
+        Game.pd3d_timescale_orig = Game.timeScale;
+
+        // Increased game speed
+        Game.elapsed = 0.0f;
+        Game.timeScale = 4242.42f;
+    }
+
+    // *************************************************************************
+    // IHook
+    // *************************************************************************
+    @Override public void OnInit() {
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public void OnClientConnect() {
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public void OnClientDisconnect() {
+    }
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgLocal(
+      MsgLocal req, MsgLocal resp) {
+        // Set client API when connecting to local client
+        if(req.state.equals("connect")) {
+            Pd3d.pd.SetClientAPI(req.client_api);
+        }
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgGetScene(
+      MsgGetScene req, MsgGetScene resp) {
+        // Set name of current scene
+        resp.scene_name = Pd3d.names.GetSceneName(
+          ((PixelScene)scene).getClass());
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgUpdateSprites(
+      MsgUpdateSprites req, MsgUpdateSprites resp) {
+        // Set updated sprites
+        resp.sprites = Pd3d.sprite.GetUpdateList().PopList();
+        return (resp.sprites != null);
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgUpdateScene(
+      MsgUpdateScene req, MsgUpdateScene resp) {
+        // Set name of current scene
+        resp.scene_name = Pd3d.names.GetSceneName(
+          ((PixelScene)scene).getClass());
+
+        // Set log & info
+        resp.log_lines = Pd3d.pd.GetLogList().PopList();
+        resp.info_lines = Pd3d.pd.GetInfoList().PopList();
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgSwitchScene(
+      MsgSwitchScene req, MsgSwitchScene resp) {
+        // Get new scene
+        Class<? extends PixelScene> new_scene = 
+          Pd3d.names.GetSceneClass(req.scene_name);
+        if(new_scene == null) {
+            resp.SetStatus(false, 
+              "Scene name is invalid, name=%s", req.scene_name);
+            return true;
+        }
+
+        // Switch to new scene
+        switchScene(new_scene);
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgHeroInteract(
+      MsgHeroInteract req, MsgHeroInteract resp) {
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgGetInventory(
+      MsgGetInventory req, MsgGetInventory resp) {
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgSelectInventoryItem(
+      MsgSelectInventoryItem req, MsgSelectInventoryItem resp) {
+        return true;  
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgSelectQuickslotItem(
+      MsgSelectQuickslotItem req, MsgSelectQuickslotItem resp) {
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgRunItemAction(
+      MsgRunItemAction req, MsgRunItemAction resp) {
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgRunGame(
+      MsgRunGame req, MsgRunGame resp) {
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgCommand(
+      MsgCommand req, MsgCommand resp) {
+        // IDDQD
+        if(req.iddqd != null) {
+            resp.iddqd = 
+              Pd3d.game.SetIddqd(req.iddqd);;
+        }
+
+        // Extended item info
+        if(req.item_info_ext != null) {
+            resp.item_info_ext = 
+              Pd3d.game.SetItemInfoExt(req.item_info_ext);
+        }
+
+        // Music
+        if(req.music != null) {
+            Music.INSTANCE.enable(req.music);
+        }
+
+        // Sound
+        if(req.sound != null) {
+            Sample.INSTANCE.enable(req.sound);
+        }
+
+        // GAME-OP
+        if(req.game_op != null) {
+            resp.game_op = req.game_op;
+            resp.game_args = req.game_args;
+
+            switch(req.game_op) {
+            // Save
+            case "save": {
+                try {
+                    Dungeon.saveAll();
+                } catch(Exception ex) {
+                    Utils.LogException(ex, "Failed to save game");
+                }
+            } break;
+
+            // Load
+            case "load-new":
+            case "load-continue": {
+                pd3d_no_save = true;
+                InterlevelScene.mode = (req.game_op.equals("load-new")) ? 
+                  InterlevelScene.Mode.DESCEND : InterlevelScene.Mode.CONTINUE;
+                Game.switchScene(InterlevelScene.class);
+            }
+            }
+        }
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgQuestStart(
+      MsgQuestStart req, MsgQuestStart resp) {
+       return true;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public boolean OnRecvMsgQuestAction(
+      MsgQuestAction req, MsgQuestAction resp) {
+        return true;
+    }
 }

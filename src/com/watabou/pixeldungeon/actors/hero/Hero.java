@@ -21,6 +21,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
+import com.matalok.pd3d.shared.Logger;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Sample;
@@ -165,6 +170,10 @@ public class Hero extends Char {
 	public int exp = 0;
 	
 	private ArrayList<Mob> visibleEnemies; 
+
+    // PD3D
+    public String pd3d_interrupt;
+    public boolean pd3d_dest_in_one_step;
 	
 	public Hero() {
 		super();
@@ -372,12 +381,17 @@ public class Hero extends Char {
 		
 		super.act();
 		
+        boolean rc = false;
+        String rc_str = "null";
+        for(;;) {
 		if (paralysed) {
 			
 			curAction = null;
 			
 			spendAndNext( TICK );
-			return false;
+            rc_str = "paralysed"; 
+            rc = false; 
+            break;
 		}
 		
 		checkVisibleMobs();
@@ -388,14 +402,22 @@ public class Hero extends Char {
 			if (restoreHealth) {
 				if (isStarving() || HP >= HT) {
 					restoreHealth = false;
+
+                    // PD3D: need to spend one more tick otherwise 
+                    //       update message will not be sent to client
+                    spend( TIME_TO_REST ); next();
 				} else {
 					spend( TIME_TO_REST ); next();
-					return false;
+                    rc_str = "restore-health";
+                    rc = false; 
+                    break;
 				}
 			}
 			
 			ready();
-			return false;
+            rc_str = "no-restore-health";
+            rc = false; 
+            break;
 			
 		} else {
 			
@@ -405,57 +427,81 @@ public class Hero extends Char {
 			
 			if (curAction instanceof HeroAction.Move) {
 				
-				return actMove( (HeroAction.Move)curAction );
+                rc_str = "move";
+                rc = actMove( (HeroAction.Move)curAction ); 
+                break;
 				
 			} else 
 			if (curAction instanceof HeroAction.Interact) {
 				
-				return actInteract( (HeroAction.Interact)curAction );
+                rc_str = "interact";
+                rc = actInteract( (HeroAction.Interact)curAction ); 
+                break;
 				
 			} else 
 			if (curAction instanceof HeroAction.Buy) {
 				
-				return actBuy( (HeroAction.Buy)curAction );
+                rc_str = "buy";
+                rc = actBuy( (HeroAction.Buy)curAction ); 
+                break;
 				
 			}else 
 			if (curAction instanceof HeroAction.PickUp) {
 				
-				return actPickUp( (HeroAction.PickUp)curAction );
+                rc_str = "pickup";
+                rc = actPickUp( (HeroAction.PickUp)curAction ); 
+                break;
 				
 			} else 
 			if (curAction instanceof HeroAction.OpenChest) {
 				
-				return actOpenChest( (HeroAction.OpenChest)curAction );
+                rc_str = "open-chest";
+                rc = actOpenChest( (HeroAction.OpenChest)curAction ); 
+                break;
 				
 			} else 
 			if (curAction instanceof HeroAction.Unlock) {
 				
-				return actUnlock( (HeroAction.Unlock)curAction );
+                rc_str = "unlock";
+                rc = actUnlock( (HeroAction.Unlock)curAction ); 
+                break;
 				
 			} else 
 			if (curAction instanceof HeroAction.Descend) {
 				
-				return actDescend( (HeroAction.Descend)curAction );
+                rc_str = "descend";
+                rc = actDescend( (HeroAction.Descend)curAction ); 
+                break;
 				
 			} else
 			if (curAction instanceof HeroAction.Ascend) {
 				
-				return actAscend( (HeroAction.Ascend)curAction );
+                rc_str = "ascend";
+                rc = actAscend( (HeroAction.Ascend)curAction ); 
+                break;
 				
 			} else
 			if (curAction instanceof HeroAction.Attack) {
 
-				return actAttack( (HeroAction.Attack)curAction );
+                rc_str = "attack";
+                rc = actAttack( (HeroAction.Attack)curAction ); 
+                break;
 				
 			} else
 			if (curAction instanceof HeroAction.Cook) {
 
-				return actCook( (HeroAction.Cook)curAction );
+                rc_str = "cook";
+                rc = actCook( (HeroAction.Cook)curAction ); 
+                break;
 				
 			}
+            rc = false; 
+            break;
 		}
-		
-		return false;
+		} // for(;;)
+
+        Logger.d("Hero action :: type=%s", rc_str);
+		return rc;
 	}
 	
 	public void busy() {
@@ -475,8 +521,17 @@ public class Hero extends Char {
 			lastAction = curAction;
 		}
 		curAction = null;
+
+        // PD3D: target not reached by default
+        pd3d_interrupt = "target-not-reached";
 	}
-	
+
+    // PD3D: do interrupt and override flag
+    public void interrupt(String override_interrupt) {
+        interrupt();
+        pd3d_interrupt = override_interrupt;
+    }
+
 	public void resume() {
 		curAction = lastAction;
 		lastAction = null;
@@ -532,6 +587,17 @@ public class Hero extends Char {
 			
 			Heap heap = Dungeon.level.heaps.get( dst );
 			if (heap != null && heap.type == Type.FOR_SALE && heap.size() == 1) {
+                // PD3D: Start quest
+                MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+                if(msg == null) {
+                    msg = MsgQuestStart.CreateRequest();
+                    msg.quest = new DescQuest();
+                    msg.quest.need_response = true;
+                    msg.quest.name = "buy-item";
+                    msg.quest.target_cell_id = dst;
+                    Pd3d.pd.AddToRecvQueue(msg);
+                    return false;
+                }
 				GameScene.show( new WndTradeItem( heap, true ) );
 			}
 			
@@ -866,7 +932,11 @@ public class Hero extends Char {
 	}
 	
 	@Override
-	public void damage( int dmg, Object src ) {		
+	public void damage( int dmg, Object src ) {
+        // PD3D: god mode
+        if(Pd3d.game.IsIddqd()) {
+            return;
+        }
 		restoreHealth = false;
 		super.damage( dmg, src );
 		
@@ -979,7 +1049,7 @@ public class Hero extends Char {
 				curAction = new HeroAction.Attack( ch );
 			}
 			
-		} else if (Level.fieldOfView[cell] && (heap = Dungeon.level.heaps.get( cell )) != null && heap.type != Heap.Type.HIDDEN) {
+		} else if (Level.fieldOfView[cell] && (heap = Dungeon.level.heaps.get( cell )) != null && heap.type != Heap.Type.HIDDEN && Dungeon.hero.pd3d_dest_in_one_step) {
 
 			switch (heap.type) {
 			case HEAP:
@@ -998,11 +1068,11 @@ public class Hero extends Char {
 			
 			curAction = new HeroAction.Unlock( cell );
 			
-		} else if (cell == Dungeon.level.exit) {
+		} else if (cell == Dungeon.level.exit && Dungeon.hero.pd3d_dest_in_one_step) {
 			
 			curAction = new HeroAction.Descend( cell );
 			
-		} else if (cell == Dungeon.level.entrance) {
+		} else if (cell == Dungeon.level.entrance && Dungeon.hero.pd3d_dest_in_one_step) {
 			
 			curAction = new HeroAction.Ascend( cell );
 			
@@ -1340,6 +1410,10 @@ public class Hero extends Char {
 					
 					if (intentional) {
 						sprite.parent.addToBack( new CheckedCell( p ) );
+
+                        // PD3D
+                        Pd3d.game.AddEvent(MapEnum.EventType.MARKER_SEARCH)
+                          .SetCellId(p);
 					}
 					
 					if (Level.secret[p] && (intentional || Random.Float() < level)) {

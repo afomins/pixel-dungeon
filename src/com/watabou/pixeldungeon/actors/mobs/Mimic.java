@@ -17,10 +17,7 @@
  */
 package com.watabou.pixeldungeon.actors.mobs;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
@@ -36,6 +33,7 @@ import com.watabou.pixeldungeon.items.scrolls.ScrollOfPsionicBlast;
 import com.watabou.pixeldungeon.levels.Level;
 import com.watabou.pixeldungeon.scenes.GameScene;
 import com.watabou.pixeldungeon.sprites.MimicSprite;
+import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -64,7 +62,13 @@ public class Mimic extends Mob {
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
-		items = new ArrayList<Item>( (Collection<? extends Item>) bundle.getCollection( ITEMS ) ); 
+
+		// PD3D
+//		items = new ArrayList<Item>( (Collection<? extends Item>) bundle.getCollection( ITEMS ) );
+		items = new ArrayList<Item>();
+		for(Bundlable b : bundle.getCollection( ITEMS )) {
+			items.add((Item)b);
+		}
 		adjustStats( bundle.getInt( LEVEL ) );
 	}
 	

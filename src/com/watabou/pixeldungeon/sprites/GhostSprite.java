@@ -35,13 +35,13 @@ public class GhostSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 14, 15 );
 		
-		idle = new Animation( 5, true );
+		idle = new Animation( "idle", 5, true );
 		idle.frames( frames, 0, 1 );
 		
-		run = new Animation( 10, true );
+		run = new Animation( "run", 10, true );
 		run.frames( frames, 0, 1 );
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( frames, 0 );
 		
 		play( idle );

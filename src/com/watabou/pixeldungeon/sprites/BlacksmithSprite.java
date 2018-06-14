@@ -25,11 +25,16 @@ import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.effects.Speck;
 import com.watabou.pixeldungeon.levels.Level;
+import com.watabou.utils.SystemTime;
 
 public class BlacksmithSprite extends MobSprite {
 	
 	private Emitter emitter;
 	
+    // PD3D
+    private long pd3d_idle_animation_duration;
+    private long pd3d_sample_timestamp;
+
 	public BlacksmithSprite() {
 		super();
 		
@@ -37,16 +42,19 @@ public class BlacksmithSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 13, 16 );
 		
-		idle = new Animation( 15, true );
+		idle = new Animation( "idle", 15, true );
 		idle.frames( frames, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 3 );
 		
-		run = new Animation( 20, true );
+		run = new Animation( "run", 20, true );
 		run.frames( frames, 0 );
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( frames, 0 );
 		
 		play( idle );
+
+        // PD3D: duration of idle animation
+        pd3d_idle_animation_duration = (long)(((float)idle.frames.length / idle.pd3d_fps) * 1000);
 	}
 	
 	@Override
@@ -71,7 +79,13 @@ public class BlacksmithSprite extends MobSprite {
 	@Override
 	public void onComplete( Animation anim ) {
 		super.onComplete( anim );
-		
+
+        // PD3DP: run this callback only when idle animation is over
+        if(pd3d_sample_timestamp > SystemTime.now - pd3d_idle_animation_duration) {
+            return;
+        }
+        pd3d_sample_timestamp = SystemTime.now;
+
 		if (visible && emitter != null && anim == idle) {
 			emitter.burst( Speck.factory( Speck.FORGE ), 3 );
 			float volume = 0.2f / (Level.distance( ch.pos, Dungeon.hero.pos ));

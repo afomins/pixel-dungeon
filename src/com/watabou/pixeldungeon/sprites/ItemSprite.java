@@ -53,7 +53,10 @@ public class ItemSprite extends MovieClip {
 	private boolean glowUp;
 	
 	private float dropInterval;
-	
+
+    // PD3D
+    public int pd3d_obj_id;  // ID of the item 
+
 	public ItemSprite() {
 		this( ItemSpriteSheet.SMTH, null );
 	}
@@ -148,6 +151,9 @@ public class ItemSprite extends MovieClip {
 		if ((this.glowing = glowing) == null) {
 			resetColor();
 		}
+
+        // PD3D
+        pd3d_obj_id = image;
 		return this;
 	}
 	

@@ -19,6 +19,11 @@ package com.watabou.pixeldungeon.items;
 
 import java.util.ArrayList;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
@@ -62,7 +67,22 @@ public class TomeOfMastery extends Item {
 	@Override
 	public void execute( Hero hero, String action ) {
 		if (action.equals( AC_READ )) {
-			
+            // PD3D: Start quest
+            MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+            if(msg == null) {
+                msg = MsgQuestStart.CreateRequest();
+                msg.quest = new DescQuest();
+                msg.quest.need_response = true;
+                msg.quest.name = "read-tome-of-mastery";
+                msg.quest.title = name();
+                msg.quest.target_item_id = m_pd3d_id;
+                msg.quest.sprite_id = new DescSpriteInst();
+                msg.quest.sprite_id.type = "item";
+                msg.quest.sprite_id.id = MapEnum.ItemType.MASTERY.ordinal();
+                Pd3d.pd.AddToRecvQueue(msg);
+                return;
+            }
+
 			if (hero.buff( Blindness.class ) != null) {
 				GLog.w( TXT_BLINDED );
 				return;

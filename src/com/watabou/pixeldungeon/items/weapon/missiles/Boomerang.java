@@ -17,6 +17,7 @@
  */
 package com.watabou.pixeldungeon.items.weapon.missiles;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.actors.hero.Hero;
@@ -86,7 +87,10 @@ public class Boomerang extends MissileWeapon {
 		
 		((MissileSprite)curUser.sprite.parent.recycle( MissileSprite.class )).
 			reset( from, curUser.pos, curItem, null );
-		
+
+        // PD3D 
+        Pd3d.game.SetCircleBack(true);
+
 		if (throwEquiped) {
 			owner.belongings.weapon = this;
 			owner.spend( -TIME_TO_EQUIP );

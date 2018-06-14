@@ -39,22 +39,22 @@ public class GooSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 20, 14 );
 		
-		idle = new Animation( 10, true );
+		idle = new Animation( "idle", 10, true );
 		idle.frames( frames, 0, 1 );
 		
-		run = new Animation( 10, true );
+		run = new Animation( "run", 10, true );
 		run.frames( frames, 0, 1 );
 		
-		pump = new Animation( 20, true );
+		pump = new Animation( "pump", 20, true );
 		pump.frames( frames, 0, 1 );
 		
-		jump = new Animation( 1, true );
+		jump = new Animation( "jump", 1, true );
 		jump.frames( frames, 6 );
 		
-		attack = new Animation( 10, false );
+		attack = new Animation( "attack", 10, false );
 		attack.frames( frames, 5, 0, 6 );
 		
-		die = new Animation( 10, false );
+		die = new Animation( "die", 10, false );
 		die.frames( frames, 2, 3, 4 );
 		
 		play( idle );

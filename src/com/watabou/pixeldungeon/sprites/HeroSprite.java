@@ -19,6 +19,9 @@ package com.watabou.pixeldungeon.sprites;
 
 import android.graphics.RectF;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Camera;
@@ -42,6 +45,7 @@ public class HeroSprite extends CharSprite {
 	private Animation fly;
 	private Animation read;
 	
+	
 	public HeroSprite() {
 		super();
 		
@@ -52,33 +56,46 @@ public class HeroSprite extends CharSprite {
 		
 		idle();
 	}
-	
-	public void updateArmor() {
 
-		TextureFilm film = new TextureFilm( tiers(), ((Hero)ch).tier(), FRAME_WIDTH, FRAME_HEIGHT );
+    public HeroSprite(String tx, int tier) {
+        super();
+        texture(tx);
+        updateArmor(tier);
+    }
+
+    public void updateArmor() {
+        updateArmor(((Hero)ch).tier());
+    }
+
+	public void updateArmor(int tier) {
+
+		TextureFilm film = new TextureFilm( tiers(), tier, FRAME_WIDTH, FRAME_HEIGHT );
 		
-		idle = new Animation( 1, true );
+		idle = new Animation( "idle", 1, true );
 		idle.frames( film, 0, 0, 0, 1, 0, 0, 1, 1 );
 		
-		run = new Animation( RUN_FRAMERATE, true );
+		run = new Animation( "run", RUN_FRAMERATE, true );
 		run.frames( film, 2, 3, 4, 5, 6, 7 );
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( film, 8, 9, 10, 11, 12, 11 );
 		
-		attack = new Animation( 15, false );
+		attack = new Animation( "attack", 15, false );
 		attack.frames( film, 13, 14, 15, 0 );
 		
-		zap = attack.clone();
+		zap = attack.clone("zap");
 		
-		operate = new Animation( 8, false );
+		operate = new Animation( "operate", 8, false );
 		operate.frames( film, 16, 17, 16, 17 );
 		
-		fly = new Animation( 1, true );
+		fly = new Animation( "fly", 1, true );
 		fly.frames( film, 18 );
 		
-		read = new Animation( 20, false );
+		read = new Animation( "read", 20, false );
 		read.frames( film, 19, 20, 20, 20, 20, 20, 20, 20, 20, 19 );
+
+        // PD3D
+        Pd3dSetTileOffset(tier);
 	}
 	
 	@Override
@@ -144,4 +161,14 @@ public class HeroSprite extends CharSprite {
 		
 		return avatar;
 	}
+
+    // *************************************************************************
+    // Pd3dNewSprite.ISprite
+    // *************************************************************************
+    @Override public LinkedList<Animation> Pd3dGetAnimations(LinkedList<Animation> list) {
+        super
+          .Pd3dGetAnimations(list)
+          .addAll(Arrays.asList(fly, read));
+        return list;
+    }
 }

@@ -17,6 +17,11 @@
  */
 package com.watabou.pixeldungeon.levels.features;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Sample;
@@ -49,6 +54,20 @@ public class Chasm {
 	public static boolean jumpConfirmed = false;
 	
 	public static void heroJump( final Hero hero ) {
+        // PD3D: Start quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+        if(msg == null) {
+            msg = MsgQuestStart.CreateRequest();
+            msg.quest = new DescQuest();
+            msg.quest.need_response = true;
+            msg.quest.name = "jump-chasm";
+            msg.quest.sprite_id = new DescSpriteInst();
+            msg.quest.sprite_id.type = "item";
+            msg.quest.sprite_id.id = MapEnum.ItemType.BONES.ordinal();
+            Pd3d.pd.AddToRecvQueue(msg);
+            return;
+        }
+
 		GameScene.show( 
 			new WndOptions( TXT_CHASM, TXT_JUMP, TXT_YES, TXT_NO ) {
 				@Override

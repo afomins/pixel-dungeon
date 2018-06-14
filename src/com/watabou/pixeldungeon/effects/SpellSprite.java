@@ -19,6 +19,8 @@ package com.watabou.pixeldungeon.effects;
 
 import java.util.HashMap;
 
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.TextureFilm;
@@ -52,7 +54,7 @@ public class SpellSprite extends Image {
 	private float passed;
 	
 	private static HashMap<Char,SpellSprite> all = new HashMap<Char, SpellSprite>();
-	
+
 	public SpellSprite() {
 		super( Assets.SPELL_ICONS );
 		
@@ -131,5 +133,11 @@ public class SpellSprite extends Image {
 		sprite.reset( index );
 		sprite.target = ch;
 		all.put( ch,  sprite );
+
+        // PD3D
+        DescSpriteInst spell = new DescSpriteInst();
+        spell.type = "pfx-image";
+        spell.id = MapEnum.PfxImage.SPELL_FOOD.ordinal() + index;
+        ch.sprite.Pd3dGetSpriteCache().Add(spell);
 	}
 }

@@ -17,6 +17,10 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.msg.MsgQuestStart;
+import com.matalok.pd3d.shared.UtilsClass;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Sample;
@@ -54,6 +58,9 @@ public class WndBlacksmith extends Window {
 	private static final String TXT_REFORGE =
 		"Reforge them";
 	
+    // PD3D: Initial quest descriptor
+    private DescQuest pd3d_quest;
+
 	public WndBlacksmith( Blacksmith troll, Hero hero ) {
 		
 		super();
@@ -72,7 +79,7 @@ public class WndBlacksmith extends Window {
 		
 		btnItem1 = new ItemButton() {
 			@Override
-			protected void onClick() {
+			/*protected*/public void onClick() {
 				btnPressed = btnItem1;
 				GameScene.selectItem( itemSelector, WndBag.Mode.UPGRADEABLE, TXT_SELECT );
 			}
@@ -82,7 +89,7 @@ public class WndBlacksmith extends Window {
 		
 		btnItem2 = new ItemButton() {
 			@Override
-			protected void onClick() {
+			/*protected*/public void onClick() {
 				btnPressed = btnItem2;
 				GameScene.selectItem( itemSelector, WndBag.Mode.UPGRADEABLE, TXT_SELECT );
 			}
@@ -103,6 +110,12 @@ public class WndBlacksmith extends Window {
 		
 		
 		resize( WIDTH, (int)btnReforge.bottom() );
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            Pd3dCreateQuestDesc(msg, message.text());
+        }
 	}
 	
 	protected WndBag.Listener itemSelector = new WndBag.Listener() {
@@ -110,20 +123,56 @@ public class WndBlacksmith extends Window {
 		public void onSelect( Item item ) {
 			if (item != null) {
 				btnPressed.item( item );
-				
+				String result = null;
 				if (btnItem1.item != null && btnItem2.item != null) {
-					String result = Blacksmith.verify( btnItem1.item, btnItem2.item );
+					result = Blacksmith.verify( btnItem1.item, btnItem2.item );
 					if (result != null) {
-						GameScene.show( new WndMessage( result ) );
+//						GameScene.show( new WndMessage( result ) );
 						btnReforge.enable( false );
 					} else {
 						btnReforge.enable( true );
 					}
 				}
+
+                // PD3D: Update quest
+                if(pd3d_quest != null) {
+                    MsgQuestStart msg = MsgQuestStart.CreateRequest();
+                    msg.quest = pd3d_quest;
+                    msg.quest.name = "blacksmith-reforge-update";
+                    Pd3dCreateQuestDesc(msg, (result != null) ? result : TXT_PROMPT);
+                    Pd3d.pd.AddToRecvQueue(msg);
+                }
 			}
 		}
 	};
-	
+
+    private MsgQuestStart Pd3dCreateQuestDesc(MsgQuestStart msg, String text) {
+        DescQuest quest = pd3d_quest = msg.quest;
+        quest.text = text;
+        quest.target_item_id = (btnItem1.item != null) ? btnItem1.item.m_pd3d_id : -1;
+        quest.target_item_id2 = (btnItem2.item != null) ? btnItem2.item.m_pd3d_id : -1;
+        Pd3d.game.ResetQuest(quest);
+
+        // Select item
+        int idx = 0;
+        for(final ItemButton btn : new ItemButton[] {btnItem1, btnItem2}) {
+            String name =  "#" + idx++ + " " + ((btn.item == null) ? "Select item" : 
+              Pd3d.names.GetItemName(btn.item) + "-" + btn.item.m_pd3d_id);
+
+            Pd3d.game.RegisterQuestAction(
+              quest, name, name, true, new UtilsClass.Callback() {
+              @Override public Object Run(Object... args) {
+                  btn.onClick();
+                  return null;
+            }});
+        }
+
+        // Reforge
+        Pd3d.game.RegisterQuestAction(
+          quest, "reforge", btnReforge);
+        return msg;
+    }
+
 	public static class ItemButton extends Component {
 		
 		protected NinePatch bg;
@@ -156,7 +205,7 @@ public class WndBlacksmith extends Window {
 			add( slot );
 		}
 		
-		protected void onClick() {};
+		/*protected*/public void onClick() {};
 		
 		@Override
 		protected void layout() {	

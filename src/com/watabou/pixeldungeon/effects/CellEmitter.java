@@ -17,6 +17,7 @@
  */
 package com.watabou.pixeldungeon.effects;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.pixeldungeon.DungeonTilemap;
 import com.watabou.pixeldungeon.scenes.GameScene;
@@ -30,7 +31,9 @@ public class CellEmitter {
 		
 		Emitter emitter = GameScene.emitter();
 		emitter.pos( p.x, p.y, DungeonTilemap.SIZE, DungeonTilemap.SIZE );
-		
+
+        // PD3D: Register emitter
+        Pd3d.game.AddEmitter(emitter, Integer.valueOf(cell));
 		return emitter;
 	}
 	
@@ -40,7 +43,9 @@ public class CellEmitter {
 		
 		Emitter emitter = GameScene.emitter();
 		emitter.pos( p.x + DungeonTilemap.SIZE / 2, p.y + DungeonTilemap.SIZE / 2 );
-		
+
+        // PD3D: Register emitter
+        Pd3d.game.AddEmitter(emitter, Integer.valueOf(cell));
 		return emitter;
 	}
 	
@@ -50,7 +55,9 @@ public class CellEmitter {
 		
 		Emitter emitter = GameScene.emitter();
 		emitter.pos( p.x, p.y + DungeonTilemap.SIZE, DungeonTilemap.SIZE, 0 );
-		
+
+        // PD3D: Register emitter
+        Pd3d.game.AddEmitter(emitter, Integer.valueOf(cell));
 		return emitter;
 	}
 }

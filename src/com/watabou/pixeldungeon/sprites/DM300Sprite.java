@@ -30,16 +30,16 @@ public class DM300Sprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 22, 20 );
 		
-		idle = new Animation( 10, true );
+		idle = new Animation( "idle", 10, true );
 		idle.frames( frames, 0, 1 );
 		
-		run = new Animation( 10, true );
+		run = new Animation( "run", 10, true );
 		run.frames( frames, 2, 3 );
 		
-		attack = new Animation( 15, false );
+		attack = new Animation( "attack", 15, false );
 		attack.frames( frames, 4, 5, 6 );
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( frames, 0, 7, 0, 7, 0, 7, 0, 7, 0, 7, 0, 7, 8 );
 		
 		play( idle );

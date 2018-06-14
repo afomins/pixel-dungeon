@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon.effects.particles;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.map.MapEnum;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.particles.PixelParticle;
 import com.watabou.noosa.particles.Emitter.Factory;
@@ -33,6 +35,11 @@ public class SparkParticle extends PixelParticle {
 		public boolean lightMode() {
 			return true;
 		};
+
+        // PD3D
+        @Override public Object Pd3dGetEvent() {
+            return Pd3d.game.CreateEvent(MapEnum.EventType.PFX_SPARK);
+        }
 	};
 	
 	public SparkParticle() {

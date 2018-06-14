@@ -34,7 +34,7 @@ import com.watabou.utils.Bundle;
 
 public class QuickSlot extends Button implements WndBag.Listener {
 
-	private static final String TXT_SELECT_ITEM = "Select an item for the quickslot";
+	public static final String TXT_SELECT_ITEM = "Select an item for the quickslot";
 	
 	private static QuickSlot primary;
 	private static QuickSlot secondary;
@@ -318,4 +318,24 @@ public class QuickSlot extends Button implements WndBag.Listener {
 			secondaryValue = null;
 		}
 	}
+
+    // *************************************************************************
+    // Pd3d
+    // *************************************************************************
+    public static QuickSlot Pd3dGetQuickSlot(int idx) {
+        return (idx == 0) ? QuickSlot.primary : 
+               (idx == 1) ? QuickSlot.secondary : null;
+    }
+
+    //--------------------------------------------------------------------------
+    public static Item Pd3dGetItem(int idx) {
+        return QuickSlot.Pd3dGetQuickSlot(idx).itemInSlot;
+    }
+
+    //--------------------------------------------------------------------------
+    public static void Pd3dPutItem(int idx, Item item) {
+        QuickSlot q = QuickSlot.Pd3dGetQuickSlot(idx);
+        q.onSelect(item);
+        q.item(q.select());
+    }
 }

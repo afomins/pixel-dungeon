@@ -22,6 +22,9 @@ import java.util.HashSet;
 
 import android.util.SparseArray;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.Pd3dGame.Step;
+import com.matalok.pd3d.shared.Logger;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.Statistics;
 import com.watabou.pixeldungeon.actors.blobs.Blob;
@@ -35,7 +38,7 @@ public abstract class Actor implements Bundlable {
 	
 	public static final float TICK	= 1f;
 
-	private float time;
+	/*private*/public float time;
 	
 	private int id = 0;
 	
@@ -96,11 +99,11 @@ public abstract class Actor implements Bundlable {
 	// *** Static members ***
 	
 	private static HashSet<Actor> all = new HashSet<Actor>();
-	private static Actor current;
+	/*private*/public static Actor current;
 	
 	private static SparseArray<Actor> ids = new SparseArray<Actor>();
 	
-	private static float now = 0;
+	/*private*/public static float now = 0;
 	
 	private static Char[] chars = new Char[Level.LENGTH];
 	
@@ -166,9 +169,17 @@ public abstract class Actor implements Bundlable {
 		if (current != null) {
 			return;
 		}
-	
-		boolean doNext;
 
+        // Check if next step is allowed
+        float old_now = now;
+        Step step = Pd3d.game.GetStep();
+        Step.State cur_state = step.state;
+        Step.State next_state = step.TryNext();
+        if(next_state == null) {
+            return;
+        }
+
+		boolean doNext;
 		do {
 			now = Float.MAX_VALUE;
 			current = null;
@@ -193,19 +204,34 @@ public abstract class Actor implements Bundlable {
 					// If it's character's turn to act, but its sprite 
 					// is moving, wait till the movement is over
 					current = null;
+                    Logger.d("Finish :: hero's sprite is still moving");
 					break;
 				}
 				
 				doNext = current.act();
+                if(!doNext) {
+                    Logger.d("Finish :: don't do next");
+                }
 				if (doNext && !Dungeon.hero.isAlive()) {
 					doNext = false;
 					current = null;
+                    Logger.d("Finish :: hero is dead");
 				}
 			} else {
+                Logger.d("Finish :: no current");
 				doNext = false;
 			}
 			
 		} while (doNext);
+
+        // Finalize current step
+        float duration = now - old_now;
+        if(duration > 0.0f || cur_state == Step.State.ENABLE_ONE) {
+            step.Finalize(duration);
+        }
+
+        // Switch to next step
+        step.SetState(next_state);
 	}
 	
 	public static void add( Actor actor ) {

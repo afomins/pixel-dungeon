@@ -19,6 +19,8 @@ package com.watabou.pixeldungeon.scenes;
 
 import com.watabou.noosa.Game;
 import com.watabou.pixeldungeon.windows.WndStory;
+import com.matalok.pd3d.desc.DescSceneIntro;
+import com.matalok.pd3d.msg.MsgUpdateScene;
 
 public class IntroScene extends PixelScene {
 
@@ -44,4 +46,19 @@ public class IntroScene extends PixelScene {
 		
 		fadeIn();
 	}
+
+    // *************************************************************************
+    // IHook
+    // *************************************************************************
+    @Override public void OnInit() {
+    }
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgUpdateScene(
+      MsgUpdateScene req, MsgUpdateScene resp) {
+        resp.intro_scene = new DescSceneIntro();
+        return true;
+    }
 }

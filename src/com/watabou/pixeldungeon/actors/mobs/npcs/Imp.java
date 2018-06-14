@@ -17,6 +17,11 @@
  */
 package com.watabou.pixeldungeon.actors.mobs.npcs;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.Journal;
 import com.watabou.pixeldungeon.actors.Actor;
@@ -115,7 +120,22 @@ public class Imp extends NPC {
 	
 	@Override
 	public void interact() {
-		
+        // PD3D: Start quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+        if(msg == null) {
+            msg = MsgQuestStart.CreateRequest();
+            msg.quest = new DescQuest();
+            msg.quest.need_response = true;
+            msg.quest.title = name;
+            msg.quest.name = "imp";
+            msg.quest.target_char_id = id();
+            msg.quest.sprite_id = new DescSpriteInst();
+            msg.quest.sprite_id.type = "char";
+            msg.quest.sprite_id.id = MapEnum.CharType.IMP.ordinal();
+            Pd3d.pd.AddToRecvQueue(msg);
+            return;
+        }
+
 		sprite.turnTo( pos, Dungeon.hero.pos );
 		if (Quest.given) {
 			

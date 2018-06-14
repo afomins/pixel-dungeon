@@ -19,6 +19,10 @@ package com.watabou.pixeldungeon.items;
 
 import java.util.ArrayList;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
@@ -60,7 +64,7 @@ public class Weightstone extends Item {
 	
 	@Override
 	public void execute( Hero hero, String action ) {
-		if (action == AC_APPLY) {
+		if (action.equals(AC_APPLY)) {
 
 			curUser = hero;
 			GameScene.selectItem( itemSelector, WndBag.Mode.WEAPON, TXT_SELECT_WEAPON );
@@ -148,7 +152,18 @@ public class Weightstone extends Item {
 			tfMesage.x = MARGIN;
 			tfMesage.y = titlebar.bottom() + MARGIN;
 			add( tfMesage );
-			
+
+            // PD3D: Start quest
+            MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+            if(msg != null) {
+                msg.quest.title = weapon.name;
+                msg.quest.text = tfMesage.text();
+                msg.quest.sprite_id = new DescSpriteInst();
+                msg.quest.sprite_id.type = "item";
+                msg.quest.sprite_id.id = MapEnum.ItemType.WEIGHT.ordinal();
+                Pd3d.game.ResetQuest(msg.quest);
+            }
+
 			float pos = tfMesage.y + tfMesage.height();
 			
 			if (weapon.imbue != Weapon.Imbue.SPEED) {
@@ -163,6 +178,11 @@ public class Weightstone extends Item {
 				add( btnSpeed );
 				
 				pos = btnSpeed.bottom();
+
+                // PD3D
+                if(msg != null) {
+                    Pd3d.game.RegisterQuestAction(msg.quest, "speed", btnSpeed);
+                }
 			}
 			
 			if (weapon.imbue != Weapon.Imbue.ACCURACY) {
@@ -177,6 +197,11 @@ public class Weightstone extends Item {
 				add( btnAccuracy );
 				
 				pos = btnAccuracy.bottom();
+
+                // PD3D
+                if(msg != null) {
+                    Pd3d.game.RegisterQuestAction(msg.quest, "accuracy", btnAccuracy);
+                }
 			}
 			
 			RedButton btnCancel = new RedButton( TXT_CANCEL ) {
@@ -189,6 +214,11 @@ public class Weightstone extends Item {
 			add( btnCancel );
 			
 			resize( WIDTH, (int)btnCancel.bottom() + MARGIN );
+
+            // PD3D
+            if(msg != null) {
+                Pd3d.game.RegisterQuestAction(msg.quest, "cancel", btnCancel);
+            }
 		}
 		
 		protected void onSelect( int index ) {};

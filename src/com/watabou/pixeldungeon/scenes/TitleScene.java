@@ -21,6 +21,8 @@ import javax.microedition.khronos.opengles.GL10;
 
 import android.opengl.GLES20;
 
+import com.matalok.pd3d.desc.DescSceneTitle;
+import com.matalok.pd3d.msg.MsgUpdateScene;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
@@ -159,11 +161,11 @@ public class TitleScene extends PixelScene {
 		add( fb );
 	}
 	
-	private static class DashboardItem extends Button {
+	public static class DashboardItem extends Button {
 		
 		public static final float SIZE	= 48;
 		
-		private static final int IMAGE_SIZE	= 32;
+		public static final int IMAGE_SIZE	= 32;
 		
 		private Image image;
 		private BitmapText label;
@@ -211,4 +213,13 @@ public class TitleScene extends PixelScene {
 			image.resetColor();
 		}
 	}
+
+    // *************************************************************************
+    // IRequestHandler
+    // *************************************************************************
+    @Override public boolean OnRecvMsgUpdateScene(
+      MsgUpdateScene req, MsgUpdateScene resp) {
+        resp.title_scene = new DescSceneTitle();
+        return true;
+    }
 }

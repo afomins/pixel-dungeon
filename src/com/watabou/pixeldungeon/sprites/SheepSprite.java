@@ -30,13 +30,13 @@ public class SheepSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 16, 15 );
 		
-		idle = new Animation( 8, true );
+		idle = new Animation( "idle", 8, true );
 		idle.frames( frames, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0 );
 		
-		run = idle.clone();	
-		attack = idle.clone();
+		run = idle.clone("run");	
+		attack = idle.clone("attack");
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( frames, 0 );
 		
 		play( idle );

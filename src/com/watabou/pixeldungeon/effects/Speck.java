@@ -21,6 +21,9 @@ import android.annotation.SuppressLint;
 import android.util.FloatMath;
 import android.util.SparseArray;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescPfxMutator;
+import com.matalok.pd3d.map.MapEnum;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.TextureFilm;
@@ -428,6 +431,12 @@ public class Speck extends Image {
 				public boolean lightMode() {
 					return lightMode;
 				}
+
+                // PD3D
+                public Object Pd3dGetEvent() {
+                    return Pd3d.game.CreateEvent(MapEnum.EventType.PFX_SPEC)
+                      .SetPfxMutator(DescPfxMutator.Field.IMAGE_ID, type);
+                }
 			};
 			factories.put( type, factory );
 		}

@@ -17,6 +17,7 @@
  */
 package com.watabou.pixeldungeon.utils;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.utils.Signal;
 
 import android.util.Log;
@@ -40,6 +41,9 @@ public class GLog {
 		
 		Log.i( TAG, text );
 		update.dispatch( text );
+
+        // PD3D - send log to client
+        Pd3d.pd.GetLogList().Add(text);
 	}
 	
 	public static void p( String text, Object... args ) {

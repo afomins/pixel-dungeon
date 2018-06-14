@@ -89,7 +89,9 @@ public class Shopkeeper extends NPC {
 		@Override
 		public void onSelect( Item item ) {
 			if (item != null) {
-				WndBag parentWnd = sell();
+                // PD3D: don't refresh inventory window here, do it when 
+                //       quest is over in GameScene.OnRecvMsgQuestAction()
+				WndBag parentWnd = null;//sell();
 				GameScene.show( new WndTradeItem( item, parentWnd ) );
 			}
 		}

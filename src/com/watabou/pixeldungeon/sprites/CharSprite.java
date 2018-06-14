@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon.sprites;
 
+import com.matalok.pd3d.shared.UtilsClass;
+import com.matalok.pd3d.shared.UtilsClass.SmartList;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.MovieClip;
 import com.watabou.noosa.Visual;
@@ -42,7 +44,16 @@ import com.watabou.utils.Callback;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
-public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip.Listener {
+import java.util.Arrays;
+import java.util.LinkedList;
+
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.Pd3dSprite;
+import com.matalok.pd3d.desc.DescStringInst;
+import com.matalok.pd3d.desc.DescSpriteInst;
+
+public class CharSprite extends MovieClip 
+  implements Tweener.Listener, MovieClip.Listener, Pd3dSprite.ISprite {
 	
 	public static final int DEFAULT		= 0xFFFFFF;
 	public static final int POSITIVE	= 0x00FF00;
@@ -86,10 +97,22 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public Char ch;
 	
 	public boolean isMoving = false;
-	
+
+    // PD3D
+    private String pd3d_texture_name;                       // Name of the texture
+    private int pd3d_tile_offset;                           // Offset in tilemap texture
+    private SmartList<String> pd3d_anim_cache;              // Animation cache
+    public SmartList<DescStringInst> pd3d_string_cache;     // Status string cache
+    public SmartList<DescSpriteInst> pd3d_sprite_cache;     // Status sprite cache
+
 	public CharSprite() {
 		super();
 		listener = this;
+
+        // PD3D
+        pd3d_anim_cache = new SmartList<String>();
+        pd3d_string_cache = new SmartList<DescStringInst>();
+        pd3d_sprite_cache = new SmartList<DescSpriteInst>();
 	}
 	
 	public void link( Char ch ) {
@@ -114,6 +137,10 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	public void place( int cell ) {
 		point( worldToCamera( cell ) );
+
+        // PD3D: play run animation when placing char
+        pd3d_anim_cache.Add("run");
+        pd3d_anim_cache.Add("idle");
 	}
 	
 	public void showStatus( int color, String text, Object... args ) {
@@ -126,6 +153,12 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			} else {
 				FloatingText.show( x + width * 0.5f, y, text, color );
 			}
+
+            // PD3D
+            DescStringInst str = new DescStringInst();
+            str.text = text;
+            str.color = (color << 8) | 0xff;
+            pd3d_string_cache.Add(str);
 		}
 	}
 	
@@ -135,7 +168,6 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	public void move( int from, int to ) {
 		play( run );
-		
 		motion = new PosTweener( this, worldToCamera( to ), MOVE_INTERVAL );
 		motion.listener = this;
 		parent.add( motion );
@@ -211,18 +243,27 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public Emitter emitter() {
 		Emitter emitter = GameScene.emitter();
 		emitter.pos( this );
+
+        // PD3D: Register emitter
+        Pd3d.game.AddEmitter(emitter, new Integer(ch.pos));
 		return emitter;
 	}
 	
 	public Emitter centerEmitter() {
 		Emitter emitter = GameScene.emitter();
 		emitter.pos( center() );
+
+        // PD3D: Register emitter
+        Pd3d.game.AddEmitter(emitter, new Integer(ch.pos));
 		return emitter;
 	}
 	
 	public Emitter bottomEmitter() {
 		Emitter emitter = GameScene.emitter();
 		emitter.pos( x, y + height, width, 0 );
+
+        // PD3D: Register emitter
+        Pd3d.game.AddEmitter(emitter, new Integer(ch.pos));
 		return emitter;
 	}
 	
@@ -458,4 +499,80 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			visual.point( PointF.inter( start, end, progress ).offset( 0, -height * 4 * progress * (1 - progress) ) );
 		}
 	}
+
+    // *************************************************************************
+    // MovieClip
+    // *************************************************************************
+    @Override public void texture( Object tx ) {
+        // PD3D
+        if(tx instanceof String) {
+            pd3d_texture_name = new String((String)tx);
+        }
+        super.texture(tx);
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public void play( Animation anim, boolean force ) {
+        super.play(anim, force);
+
+        // PD3D
+        pd3d_anim_cache.Add(anim.pd3d_name);
+    }
+
+    // *************************************************************************
+    // Pd3d
+    // *************************************************************************
+    public String Pd3dGetEmotionName() {
+        return (emo == null) ? null : 
+          (emo instanceof EmoIcon.Alert) ? "alert" : "sleep";
+    }
+
+    //--------------------------------------------------------------------------
+    public void Pd3dSetTileOffset(int value) {
+        pd3d_tile_offset = value;
+    }
+
+    //--------------------------------------------------------------------------
+    public SmartList<String> Pd3dGetAnimationCache() {
+        return pd3d_anim_cache;
+    }
+
+    //--------------------------------------------------------------------------
+    public SmartList<DescStringInst> Pd3dGetStringCache() {
+        return pd3d_string_cache;
+    }
+
+    //--------------------------------------------------------------------------
+    public SmartList<DescSpriteInst> Pd3dGetSpriteCache() {
+        return pd3d_sprite_cache;
+    }
+
+    // *************************************************************************
+    // Pd3dNewSprite.ISprite
+    // *************************************************************************
+    @Override public String Pd3dGetTextureName() {
+        return (pd3d_texture_name == null) ? "null" : pd3d_texture_name;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public int Pd3dGetTileOffset() {
+        return pd3d_tile_offset;
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public String Pd3dGetObjectType() {
+        return "char";
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public UtilsClass.Vector2i Pd3dGetTileSize() {
+        return new UtilsClass.Vector2i(
+          idle.pd3d_film.pd3d_frame_width, idle.pd3d_film.pd3d_frame_height);
+    }
+
+    //--------------------------------------------------------------------------
+    @Override public LinkedList<Animation> Pd3dGetAnimations(LinkedList<Animation> list) {
+        list.addAll(Arrays.asList(idle, run, attack, operate, zap, die));
+        return list;
+    }
 }

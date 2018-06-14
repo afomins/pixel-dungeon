@@ -17,6 +17,10 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.hero.Hero;
@@ -73,7 +77,14 @@ public class WndTradeItem extends Window {
 			add( btnSell );
 			
 			pos = btnSell.bottom();
-			
+
+            // PD3D: Continue quest
+            MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+            if(msg != null) {
+                Pd3d.game.ResetQuest(msg.quest)
+                  .RegisterQuestAction(msg.quest, "sell", btnSell);
+           }
+
 		} else {
 			
 			int priceAll= item.price();
@@ -97,7 +108,14 @@ public class WndTradeItem extends Window {
 			add( btnSellAll );
 			
 			pos = btnSellAll.bottom();
-			
+
+            // PD3D: Continue quest
+            MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+            if(msg != null) {
+               Pd3d.game.ResetQuest(msg.quest)
+                 .RegisterQuestAction(msg.quest, "sell-one", btnSell1)
+                 .RegisterQuestAction(msg.quest, "sell-all", btnSellAll);
+           }
 		}
 		
 		RedButton btnCancel = new RedButton( TXT_CANCEL ) {
@@ -110,6 +128,13 @@ public class WndTradeItem extends Window {
 		add( btnCancel );
 		
 		resize( WIDTH, (int)btnCancel.bottom() );
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+           Pd3d.game
+             .RegisterQuestAction(msg.quest, "cancel", btnCancel);
+       }
 	}
 	
 	public WndTradeItem( final Heap heap, boolean canBuy ) {
@@ -145,7 +170,15 @@ public class WndTradeItem extends Window {
 			add( btnCancel );
 			
 			resize( WIDTH, (int)btnCancel.bottom() );
-			
+
+            // PD3D: Continue quest
+            MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+            if(msg != null) {
+                Pd3d.game.ResetQuest(msg.quest)
+                  .RegisterQuestAction(msg.quest, "buy", btnBuy)
+                  .RegisterQuestAction(msg.quest, "cancel", btnCancel);
+            }
+
 		} else {
 			
 			resize( WIDTH, (int)pos );
@@ -168,9 +201,10 @@ public class WndTradeItem extends Window {
 		
 		IconTitle titlebar = new IconTitle();
 		titlebar.icon( new ItemSprite( item.image(), item.glowing() ) );
-		titlebar.label( forSale ? 
-			Utils.format( TXT_SALE, item.toString(), price( item ) ) : 
-			Utils.capitalize( item.toString() ) );
+        String pd3d_title = forSale ? 
+          Utils.format( TXT_SALE, item.toString(), price( item ) ) : 
+          Utils.capitalize( item.toString() );
+		titlebar.label( pd3d_title );
 		titlebar.setRect( 0, 0, WIDTH, 0 );
 		add( titlebar );
 		
@@ -188,7 +222,17 @@ public class WndTradeItem extends Window {
 		info.x = titlebar.left();
 		info.y = titlebar.bottom() + GAP;
 		add( info );
-		
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            msg.quest.title = pd3d_title;
+            msg.quest.text = item.info();
+            msg.quest.sprite_id = new DescSpriteInst();//item.image();
+            msg.quest.sprite_id.type = "item";
+            msg.quest.sprite_id.id = item.image();
+        }
+
 		return info.y + info.height();
 	}
 	

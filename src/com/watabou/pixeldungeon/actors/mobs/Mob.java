@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.actors.mobs;
 
 import java.util.HashSet;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.pixeldungeon.Badges;
 import com.watabou.pixeldungeon.Challenges;
 import com.watabou.pixeldungeon.Dungeon;
@@ -326,7 +327,10 @@ public abstract class Mob extends Char {
 		super.destroy();
 		
 		Dungeon.level.mobs.remove( this );
-		
+
+        // PD3D
+        Pd3d.game.GetDeadMobs().Add(this);
+
 		if (Dungeon.hero.isAlive()) {
 
 			if (hostile) {

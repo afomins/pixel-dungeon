@@ -19,6 +19,11 @@ package com.watabou.pixeldungeon.actors.mobs.npcs;
 
 import java.util.HashSet;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.desc.DescQuest;
+import com.matalok.pd3d.desc.DescSpriteInst;
+import com.matalok.pd3d.map.MapEnum;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.tweeners.AlphaTweener;
 import com.watabou.pixeldungeon.Assets;
@@ -105,9 +110,24 @@ public class Ghost extends NPC {
 	
 	@Override
 	public void interact() {
+        // PD3D: Start quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetReqMsg(MsgQuestStart.class);
+        if(msg == null) {
+            msg = MsgQuestStart.CreateRequest();
+            msg.quest = new DescQuest();
+            msg.quest.need_response = true;
+            msg.quest.title = name;
+            msg.quest.name = "sadghost";
+            msg.quest.target_char_id = id();
+            msg.quest.sprite_id = new DescSpriteInst();
+            msg.quest.sprite_id.type = "char";
+            msg.quest.sprite_id.id = MapEnum.CharType.GHOST.ordinal();
+            Pd3d.pd.AddToRecvQueue(msg);
+            return;
+        }
+
 		sprite.turnTo( pos, Dungeon.hero.pos );
 		Sample.INSTANCE.play( Assets.SND_GHOST );
-		
 		Quest.type.handler.interact( this );
 	}
 	

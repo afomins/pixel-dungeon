@@ -31,14 +31,14 @@ public class ShopkeeperSprite extends MobSprite {
 		texture( Assets.KEEPER );
 		TextureFilm film = new TextureFilm( texture, 14, 14 );
 		
-		idle = new Animation( 10, true );
+		idle = new Animation( "idle", 10, true );
 		idle.frames( film, 1, 1, 1, 1, 1, 0, 0, 0, 0 );
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( film, 0 );
 		
-		run = idle.clone();
-		attack = idle.clone();
+		run = idle.clone("run");
+		attack = idle.clone("attack");
 		
 		idle();
 	}

@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.items.wands;
 
 import java.util.ArrayList;
 
+import com.matalok.pd3d.Pd3d;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
@@ -408,7 +409,6 @@ public abstract class Wand extends KindOfWeapon {
 	}
 	
 	protected static CellSelector.Listener zapper = new  CellSelector.Listener() {
-		
 		@Override
 		public void onSelect( Integer target ) {
 			
@@ -427,11 +427,18 @@ public abstract class Wand extends KindOfWeapon {
 				curUser.sprite.zap( cell );
 				
 				QuickSlot.target( curItem, Actor.findChar( cell ) );
-				
+
+                // PD3D 
+                Pd3d.game.SetTargetCell((curWand.curCharges > 0) ? cell : -1);
+
 				if (curWand.curCharges > 0) {
 					
 					curUser.busy();
-					
+
+                    // PD3D: run onZap() instantly
+                    curWand.onZap( cell );
+                    curWand.wandUsed();
+/*					
 					curWand.fx( cell, new Callback() {
 						@Override
 						public void call() {
@@ -439,7 +446,7 @@ public abstract class Wand extends KindOfWeapon {
 							curWand.wandUsed();
 						}
 					} );
-					
+*/					
 					Invisibility.dispel();
 					
 				} else {
@@ -492,4 +499,11 @@ public abstract class Wand extends KindOfWeapon {
 			spend( time2charge );
 		}
 	}
+
+    // Zap wand instantly without doing cell selection 
+    public static void Pd3dZap(Hero user, Item item, int cell_idx) {
+        curUser = user;
+        curItem = item;
+        zapper.onSelect(cell_idx);
+    }
 }

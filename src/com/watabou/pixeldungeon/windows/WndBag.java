@@ -439,4 +439,22 @@ public class WndBag extends WndTabbed {
 	public interface Listener {
 		void onSelect( Item item );
 	}
+
+    // *************************************************************************
+    // Pd3d
+    // *************************************************************************
+    public static boolean Pd3dIsItemSelectable(Item item, Mode mode) {
+        // Copy-paste from WndBad::item
+        return
+          mode == Mode.QUICKSLOT && (item.defaultAction != null) ||
+          mode == Mode.FOR_SALE && (item.price() > 0) && (!item.isEquipped( Dungeon.hero ) || !item.cursed) ||
+          mode == Mode.UPGRADEABLE && item.isUpgradable() || 
+          mode == Mode.UNIDENTIFED && !item.isIdentified() ||
+          mode == Mode.WEAPON && (item instanceof MeleeWeapon || item instanceof Boomerang) ||
+          mode == Mode.ARMOR && (item instanceof Armor) ||
+          mode == Mode.ENCHANTABLE && (item instanceof MeleeWeapon || item instanceof Boomerang || item instanceof Armor) ||
+          mode == Mode.WAND && (item instanceof Wand) ||
+          mode == Mode.SEED && (item instanceof Seed) ||
+          mode == Mode.ALL;
+    }
 }

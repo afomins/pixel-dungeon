@@ -56,11 +56,9 @@ public class ArmorKit extends Item {
 	
 	@Override
 	public void execute( Hero hero, String action ) {
-		if (action == AC_APPLY) {
-
+		if (action.equals(AC_APPLY)) {
 			curUser = hero;
 			GameScene.selectItem( itemSelector, WndBag.Mode.ARMOR, TXT_SELECT_ARMOR );
-			
 		} else {
 			
 			super.execute( hero, action );

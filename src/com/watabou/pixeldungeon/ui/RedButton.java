@@ -112,4 +112,14 @@ public class RedButton extends Button {
 	public float reqHeight() {
 		return text.baseLine() + 4;
 	}
+
+    // PD3D: Simulate button click
+    public void Pd3dClick() {
+        onClick();
+    }
+
+    // PD3D: Get button text
+    public String Pd3dGetText() {
+        return text.text();
+    }
 }

@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon.windows;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.msg.MsgQuestStart;
 import com.watabou.noosa.BitmapTextMultiline;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.hero.Hero;
@@ -57,7 +59,14 @@ public class WndImp extends Window {
 		message.measure();
 		message.y = titlebar.bottom() + GAP;
 		add( message );
-		
+
+        // PD3D: Continue quest
+        MsgQuestStart msg = (MsgQuestStart)Pd3d.GetRespMsg(MsgQuestStart.class);
+        if(msg != null) {
+            msg.quest.text = message.text();
+            Pd3d.game.ResetQuest(msg.quest);
+        }
+
 		RedButton btnReward = new RedButton( TXT_REWARD ) {
 			@Override
 			protected void onClick() {
@@ -68,6 +77,12 @@ public class WndImp extends Window {
 		add( btnReward );
 		
 		resize( WIDTH, (int)btnReward.bottom() );
+
+        // PD3D: Continue quest
+        if(msg != null) {
+            Pd3d.game.RegisterQuestAction(
+              msg.quest, "reward", btnReward);
+        }
 	}
 	
 	private void takeReward( Imp imp, DwarfToken tokens, Item reward ) {

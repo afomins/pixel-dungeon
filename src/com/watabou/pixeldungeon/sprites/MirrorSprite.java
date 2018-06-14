@@ -20,6 +20,7 @@ package com.watabou.pixeldungeon.sprites;
 import com.watabou.noosa.TextureFilm;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.Char;
+import com.watabou.pixeldungeon.actors.hero.Hero;
 import com.watabou.pixeldungeon.actors.mobs.npcs.MirrorImage;
 
 public class MirrorSprite extends MobSprite {
@@ -35,6 +36,16 @@ public class MirrorSprite extends MobSprite {
 		idle();
 	}
 	
+    public MirrorSprite(String tx, int tier) {
+        super();
+        texture(tx);
+        updateArmor(tier);
+    }
+
+    public void updateArmor() {
+        updateArmor(((Hero)ch).tier());
+    }
+
 	@Override
 	public void link( Char ch ) {
 		super.link( ch );
@@ -44,18 +55,21 @@ public class MirrorSprite extends MobSprite {
 	public void updateArmor( int tier ) {
 		TextureFilm film = new TextureFilm( HeroSprite.tiers(), tier, FRAME_WIDTH, FRAME_HEIGHT );
 		
-		idle = new Animation( 1, true );
+		idle = new Animation( "idle", 1, true );
 		idle.frames( film, 0, 0, 0, 1, 0, 0, 1, 1 );
 		
-		run = new Animation( 20, true );
+		run = new Animation( "run", 20, true );
 		run.frames( film, 2, 3, 4, 5, 6, 7 );
 		
-		die = new Animation( 20, false );
+		die = new Animation( "die", 20, false );
 		die.frames( film, 0 );
 		
-		attack = new Animation( 15, false );
+		attack = new Animation( "attack", 15, false );
 		attack.frames( film, 13, 14, 15, 0 );
 		
 		idle();
+
+        // PD3D
+        Pd3dSetTileOffset(tier);
 	}
 }

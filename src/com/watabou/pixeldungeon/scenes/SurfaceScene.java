@@ -297,10 +297,10 @@ public class SurfaceScene extends PixelScene {
 		}
 	}
 
-	private static class Avatar extends Image {
+	public static class Avatar extends Image {
 		
-		private static final int WIDTH	= 24;
-		private static final int HEIGHT	= 28;
+		public static final int WIDTH	= 24;
+		public static final int HEIGHT	= 28;
 		
 		public Avatar( HeroClass cl ) {
 			super( Assets.AVATARS );
@@ -318,10 +318,10 @@ public class SurfaceScene extends PixelScene {
 			
 			TextureFilm frames = new TextureFilm( texture, 16, 16 );
 			
-			idle = new Animation( 2, true );
+			idle = new Animation( "idle", 2, true );
 			idle.frames( frames, 0, 0, 0, 0, 0, 0, 1 );
 			
-			jump = new Animation( 10, false );
+			jump = new Animation( "jump", 10, false );
 			jump.frames( frames, 2, 3, 4, 5, 6 );
 			
 			listener = this;

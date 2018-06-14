@@ -30,16 +30,16 @@ public class GolemSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 16, 16 );
 		
-		idle = new Animation( 4, true );
+		idle = new Animation( "idle", 4, true );
 		idle.frames( frames, 0, 1 );
 		
-		run = new Animation( 12, true );
+		run = new Animation( "run", 12, true );
 		run.frames( frames, 2, 3, 4, 5 );
 		
-		attack = new Animation( 10, false );
+		attack = new Animation( "attack", 10, false );
 		attack.frames( frames, 6, 7, 8 );
 		
-		die = new Animation( 15, false );
+		die = new Animation( "die", 15, false );
 		die.frames( frames, 9, 10, 11, 12, 13 );
 		
 		play( idle );

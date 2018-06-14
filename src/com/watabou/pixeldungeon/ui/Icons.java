@@ -23,35 +23,41 @@ import com.watabou.pixeldungeon.actors.hero.HeroClass;
 
 public enum Icons {
 
-	SKULL,
-	BUSY,
-	COMPASS, 
-	PREFS,
-	WARNING,
-	TARGET,
-	WATA,
-	WARRIOR,
-	MAGE,
-	ROGUE,
-	HUNTRESS,
-	CLOSE,
-	DEPTH,
-	SLEEP,
-	ALERT,
-	SUPPORT,
-	SUPPORTED,
-	BACKPACK,
-	SEED_POUCH,
-	SCROLL_HOLDER,
-	WAND_HOLSTER,
-	KEYRING,
-	CHECKED,
-	UNCHECKED,
-	EXIT,
-	CHALLENGE_OFF,
-	CHALLENGE_ON,
-	RESUME;
-	
+	SKULL( 0, 0, 8, 8 ),
+	BUSY( 8, 0, 16, 8 ),
+	COMPASS( 0, 8, 7, 13 ), 
+	PREFS( 30, 0, 46, 16 ),
+	WARNING( 46, 0, 58, 12 ),
+	TARGET( 0, 13, 16, 29 ),
+	WATA( 30, 16, 45, 26 ),
+	WARRIOR( 0, 29, 16, 45 ),
+	MAGE( 16, 29, 32, 45 ),
+	ROGUE( 32, 29, 48, 45 ),
+	HUNTRESS( 48, 29, 64, 45 ),
+	CLOSE( 0, 45, 13, 58 ),
+	DEPTH( 45, 12, 54, 20 ),
+	SLEEP( 13, 45, 22, 53 ),
+	ALERT( 22, 45, 30, 53 ),
+	SUPPORT( 30, 45, 46, 61 ),
+	SUPPORTED( 46, 45, 62, 61 ),
+	BACKPACK( 58, 0, 68, 10 ),
+	SEED_POUCH( 78, 0, 88, 10 ),
+	SCROLL_HOLDER( 68, 0, 78, 10 ),
+	WAND_HOLSTER( 88, 0, 98, 10 ),
+	KEYRING( 64, 29, 74, 39 ),
+	CHECKED( 54, 12, 66, 24 ),
+	UNCHECKED( 66, 12, 78, 24 ),
+	EXIT( 98, 0, 114, 16 ),
+	CHALLENGE_OFF( 78, 16, 102, 40 ),
+	CHALLENGE_ON( 102, 16, 126, 40 ),
+	RESUME( 114, 0, 126, 11 );
+
+    public int pd3d_x0, pd3d_y0, pd3d_x1, pd3d_y1;
+    private Icons(int x0, int y0, int x1, int y1) {
+        pd3d_x0 = x0; pd3d_y0 = y0;
+        pd3d_x1 = x1; pd3d_y1 = y1;
+    }
+
 	public Image get() {
 		return get( this );
 	}

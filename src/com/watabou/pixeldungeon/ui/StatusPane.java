@@ -58,7 +58,7 @@ public class StatusPane extends Component {
 	private BitmapText keys;
 	
 	private DangerIndicator danger;
-	private LootIndicator loot;
+	public LootIndicator loot;
 	private ResumeButton resume;
 	private BuffIndicator buffs;
 	private Compass compass;

@@ -17,6 +17,8 @@
  */
 package com.watabou.pixeldungeon.effects.particles;
 
+import com.matalok.pd3d.Pd3d;
+import com.matalok.pd3d.map.MapEnum;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.particles.PixelParticle;
 import com.watabou.noosa.particles.Emitter.Factory;
@@ -30,6 +32,11 @@ public class EarthParticle extends PixelParticle {
 		public void emit( Emitter emitter, int index, float x, float y ) {
 			((EarthParticle)emitter.recycle( EarthParticle.class )).reset( x,  y );
 		}
+
+        // PD3D
+        @Override public Object Pd3dGetEvent() {
+            return Pd3d.game.CreateEvent(MapEnum.EventType.PFX_EARTH);
+        }
 	};
 	
 	public EarthParticle() {

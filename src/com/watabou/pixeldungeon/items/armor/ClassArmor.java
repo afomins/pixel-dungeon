@@ -95,7 +95,7 @@ abstract public class ClassArmor extends Armor {
 	
 	@Override
 	public void execute( Hero hero, String action ) {
-		if (action == special()) {
+		if (action.equals(special())) {
 			
 			if (hero.HP < 3) {
 				GLog.w( TXT_LOW_HEALTH );

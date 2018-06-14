@@ -46,12 +46,14 @@ public class EmoIcon extends Image {
 		
 		if (visible) {
 			if (growing) {
-				scale.set( scale.x + Game.elapsed * timeScale );
+                // Use original time when scaling emotion icons
+                scale.set( scale.x + Game.pd3d_elapsed_orig * timeScale );
 				if (scale.x > maxSize) {
 					growing = false;
 				}
 			} else {
-				scale.set( scale.x - Game.elapsed * timeScale );
+                // Use original time when scaling emotion icons
+                scale.set( scale.x - Game.pd3d_elapsed_orig * timeScale );
 				if (scale.x < 1) {
 					growing = true;
 				}

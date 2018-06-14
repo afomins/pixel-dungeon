@@ -32,19 +32,19 @@ public class MonkSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 15, 14 );
 		
-		idle = new Animation( 6, true );
+		idle = new Animation( "idle", 6, true );
 		idle.frames( frames, 1, 0, 1, 2 );
 		
-		run = new Animation( 15, true );
+		run = new Animation( "run", 15, true );
 		run.frames( frames, 11, 12, 13, 14, 15, 16 );
 		
-		attack = new Animation( 12, false );
+		attack = new Animation( "attack", 12, false );
 		attack.frames( frames, 3, 4, 3, 4 );
 		
-		kick = new Animation( 10, false );
+		kick = new Animation( "kick", 10, false );
 		kick.frames( frames, 5, 6, 5 );
 		
-		die = new Animation( 15, false );
+		die = new Animation( "die", 15, false );
 		die.frames( frames, 1, 7, 8, 8, 9, 10 );
 		
 		play( idle );

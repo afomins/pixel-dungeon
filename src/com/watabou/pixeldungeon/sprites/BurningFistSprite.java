@@ -32,16 +32,16 @@ public class BurningFistSprite extends MobSprite {
 		
 		TextureFilm frames = new TextureFilm( texture, 24, 17 );
 		
-		idle = new Animation( 2, true );
+		idle = new Animation( "idle", 2, true );
 		idle.frames( frames, 0, 0, 1 );
 		
-		run = new Animation( 3, true );
+		run = new Animation( "run", 3, true );
 		run.frames( frames, 0, 1 );
 		
-		attack = new Animation( 8, false );
+		attack = new Animation( "attack", 8, false );
 		attack.frames( frames, 0, 5, 6 );
 		
-		die = new Animation( 10, false );
+		die = new Animation( "die", 10, false );
 		die.frames( frames, 0, 2, 3, 4 );
 		
 		play( idle );
